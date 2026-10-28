@@ -218,19 +218,6 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
         </section>
 
         <section class="sec">
-          <div class="sec-h"><h2 class="plate">일정 · 할 일 추가</h2></div>
-          <form class="inform" id="inForm" autocomplete="off">
-            <input class="fill" type="text" id="inText" maxlength="300" placeholder="예: 11/5 소방 작동기능점검 입회" aria-label="일정이나 할 일">
-            <div class="opts">
-              <label for="inDate">날짜 <input type="date" id="inDate"></label>
-              <label for="inPri"><input type="checkbox" id="inPri"> 중요</label>
-              <button class="btn solid" type="submit" style="margin-left:auto">추가</button>
-            </div>
-          </form>
-          <ul class="inlist" id="inList"></ul>
-        </section>
-
-        <section class="sec">
           <div class="sec-h"><h2 class="plate">내일 TBM</h2><span class="aside"><label for="tbmDate" class="k">날짜</label><input type="date" id="tbmDate"></span></div>
           <form class="tbm-form" id="tbmForm" autocomplete="off">
             <div class="pp-grid" id="tbmPeople"></div>
@@ -321,7 +308,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
 
   let canWrite = true;
   let dates = [], dayDoc = null, viewDate = null, picked = false;
-  let checks = { done: {}, notes: {} }, inbox = [], inboxDone = {}, chatMsgs = [], cnotes = {};
+  let checks = { done: {}, notes: {} }, chatMsgs = [], cnotes = {};
   let tbmDate = nextWorkday(kstToday()), tbmDirty = false, tbmDoc = null;
   let statusAt = 0, waitingSince = 0;
   const subs = {};
@@ -495,21 +482,6 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     if (!r.length) { const tr = el('tr'); const td2 = el('td', null, '아직 없음'); td2.colSpan = 2; tr.append(td2); tb.append(tr); return; }
     for (const x of r) { const tr = el('tr'); tr.append(el('td', null, x.text || ''), el('td', 'place', x.place || '')); tb.append(tr); }
   }
-  function renderInbox() {
-    const ul = $('inList'); ul.replaceChildren();
-    if (!inbox.length) { ul.append(el('li', 'empty', '아직 없음')); return; }
-    for (const it of inbox) {
-      const handled = inboxDone[it.id];
-      const li = el('li', 'in-row' + (handled ? ' is-done' : ''));
-      const top = el('div', 'in-top');
-      if (isDate(it.date)) top.append(el('span', 'in-date', md(it.date) + ' (' + dow(it.date) + ')'));
-      top.append(el('span', 'st ' + (handled ? 'ok' : 'new'), handled ? '반영됨' : '반영 전'));
-      if (it.pri === 'high') top.append(el('span', 'chip hi', '중요'));
-      li.append(top, el('div', 'in-text', it.text || ''));
-      if (handled) li.append(el('div', 'in-note', handled));
-      ul.append(li);
-    }
-  }
 
   // 대화 (PC 쪽 감시 프로그램이 15초마다 읽고, 5분마다 연결 신호를 남김)
   function alive() { return statusAt && Date.now() - statusAt < 12 * 60e3; }
@@ -607,7 +579,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     const d = dayDoc;
     $('board').hidden = !d; $('foot').hidden = !d;
     if (!d) return;
-    renderHeader(); renderTasks(); renderUpcoming(); renderMeeting(); renderTbm(); renderInbox(); renderChat(); paintCState();
+    renderHeader(); renderTasks(); renderUpcoming(); renderMeeting(); renderTbm(); renderChat(); paintCState();
     $('foot').textContent = '올린 시각 ' + (stamp(d.updated) || '—') + ' · 매일 아침 TBM 발송 뒤 채워져 · 체크·메모·대화는 PC와 폰 어디서나 같이 보여';
   }
 
@@ -628,17 +600,6 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     $('chatForm').addEventListener('submit', (e) => { e.preventDefault(); sendChat(); });
     $('chatText').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendChat(); } });
     document.addEventListener('focusout', () => setTimeout(() => { if (deferred && !tasksBusy()) renderTasks(); }, 0));
-    $('inForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const text = $('inText').value.trim();
-      if (!text) return;
-      const date = isDate($('inDate').value) ? $('inDate').value : null;
-      const pri = $('inPri').checked ? 'high' : null;
-      const item = { id: uid(), text, date, pri, created: nowIso() };
-      append('inbox', item).then(() => toast('추가됨')).catch(writeFailed);
-      addEvent('일정 추가 · ' + (date ? md(date) + ' ' : '') + text + (pri ? ' (중요)' : ''), { kind: 'inbox', item: item.id });
-      $('inText').value = ''; $('inDate').value = ''; $('inPri').checked = false;
-    });
     $('tbmForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const people = {};
@@ -659,8 +620,6 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       const keep = picked && dates.includes(viewDate);
       go(keep ? viewDate : pickDefault(), keep);
     });
-    subs.inbox = subList('inbox', (l) => { inbox = l.slice().sort((a, b) => String(b.created).localeCompare(String(a.created))).slice(0, 12); renderInbox(); });
-    subs.inboxDone = sub('inbox_done', (v) => { inboxDone = v || {}; renderInbox(); });
     subs.status = sub('status', (v) => { statusAt = (v && Date.parse(v.at)) || 0; paintCState(); });
     setInterval(paintCState, 60000);
     watchTbm();
