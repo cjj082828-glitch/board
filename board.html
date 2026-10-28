@@ -17,7 +17,7 @@
   --r-card:14px; --r-ctl:8px; color-scheme:dark;
 }
 body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;font-feature-settings:"tnum" 0}
-.wrap{max-width:1320px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:22px 48px;display:flex;flex-direction:column;gap:20px}
+.wrap{max-width:1320px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:22px calc(100px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:20px}
 *,*::before,*::after{box-sizing:border-box}
 button,input,select,textarea{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -149,19 +149,27 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
 .x:hover{color:var(--red)}
 
 /* 대화 */
-.chat .msgs{display:flex;flex-direction:column;gap:8px;min-height:150px;max-height:min(55vh,460px);overflow-y:auto;padding:12px;border-radius:12px;background:var(--sunken)}
+/* 대화 : 화면 아래에 늘 붙은 입력줄, 누르면 위로 대화 기록이 펼쳐짐 (사용자 10/28) */
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:15;padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:color-mix(in srgb,var(--bg) 86%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-top:1px solid var(--line)}
+.dock-in{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+.dock-panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 12px 10px;box-shadow:0 -10px 30px color-mix(in srgb,#000 45%,transparent)}
+.dock-h{display:flex;align-items:center;gap:10px;margin:0 2px 8px}
+.dock-h .aside{margin-left:auto}
+.dock .msgs{display:flex;flex-direction:column;gap:8px;min-height:120px;max-height:min(52vh,440px);overflow-y:auto;padding:10px;border-radius:10px;background:var(--sunken)}
+.dock-new{align-self:center;flex:none;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;color:var(--accent-ink);background:var(--accent)}
 .msg{max-width:86%;padding:8px 12px;border-radius:14px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14.5px;line-height:1.5}
 .msg.me{align-self:flex-end;background:var(--accent);color:var(--accent-ink);border-bottom-right-radius:4px}
 .msg.claude{align-self:flex-start;background:var(--surface);border:1px solid var(--line);border-bottom-left-radius:4px}
 .msg.sys{align-self:center;max-width:100%;padding:0 4px;color:var(--muted);font-size:12.5px;text-align:center}
 .msg .at{display:block;margin-top:3px;font-size:11px;font-variant-numeric:tabular-nums;opacity:.65}
 .typing{align-self:flex-start;font-size:13px;color:var(--muted)}
-.chat-form{display:flex;gap:8px;align-items:flex-end;margin:10px 0 10px}
-.chat-form textarea{flex:1;min-height:46px;max-height:180px}
+.chat-form{display:flex;gap:8px;align-items:flex-end}
+.chat-form .lamp{align-self:center;margin:0 4px}
+.chat-form textarea{flex:1;height:42px;min-height:42px;max-height:140px;resize:none;overflow-y:hidden;padding:10px 12px;border-radius:12px;background:var(--surface)}
 
 .state{margin:24px 0;padding:18px;border:1px dashed var(--line);border-radius:var(--r-card);color:var(--ink-2);text-align:center;background:var(--surface)}
 .foot{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));max-width:calc(100% - 32px);padding:10px 16px;border-radius:10px;background:var(--ink);color:var(--bg);font-size:14px;z-index:20}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(88px + env(safe-area-inset-bottom,0px));max-width:calc(100% - 32px);padding:10px 16px;border-radius:10px;background:var(--ink);color:var(--bg);font-size:14px;z-index:20}
 @media (prefers-reduced-motion: reduce){.bar i{transition:none}}
 </style>
 </head>
@@ -203,15 +211,6 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       </div>
 
       <div class="col inputs c-side">
-        <section class="sec chat" id="chatBox">
-          <div class="sec-h"><h2 class="plate">대화</h2><span class="aside" id="chatState"><span class="lamp"></span><span>연결 확인 중</span></span></div>
-          <div class="msgs" id="msgs" aria-live="polite"></div>
-          <form class="chat-form" id="chatForm" autocomplete="off">
-            <textarea id="chatText" rows="2" maxlength="2000" placeholder="물어보거나 알려줄 거 · Enter 보내기, Shift+Enter 줄바꿈" aria-label="보낼 말"></textarea>
-            <button class="btn solid" type="submit">보내기</button>
-          </form>
-        </section>
-
         <section class="sec">
           <div class="sec-h"><h2 class="plate">내일 TBM</h2><span class="aside"><label for="tbmDate" class="k">날짜</label><input type="date" id="tbmDate"></span></div>
           <form class="tbm-form" id="tbmForm" autocomplete="off">
@@ -221,6 +220,21 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
             <div class="tbm-foot"><span class="saved" id="tbmSaved">아직 저장 안 함</span><button class="btn solid" type="submit">저장</button></div>
           </form>
         </section>
+      </div>
+    </div>
+
+    <div class="dock" id="dock">
+      <div class="dock-in">
+        <div class="dock-panel" id="dockPanel" hidden>
+          <div class="dock-h"><h2 class="plate">대화</h2><span class="aside" id="chatState"><span class="lamp"></span><span>연결 확인 중</span></span><button class="x" id="dockClose" type="button" aria-label="대화 접기">×</button></div>
+          <div class="msgs" id="msgs" aria-live="polite"></div>
+        </div>
+        <form class="chat-form" id="chatForm" autocomplete="off">
+          <span class="lamp" id="dockLamp"></span>
+          <textarea id="chatText" rows="1" maxlength="2000" placeholder="물어보거나 알려줄 거 · Enter 보내기" aria-label="보낼 말"></textarea>
+          <span class="dock-new" id="dockNew" hidden>새 답</span>
+          <button class="btn solid" type="submit">보내기</button>
+        </form>
       </div>
     </div>
   </div>
@@ -476,7 +490,16 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   function paintCState() {
     const on = alive();
     $('chatState').replaceChildren(el('span', 'lamp' + (on ? ' g' : ' a')), el('span', null, on ? '연결 중' : '꺼져 있음 · 적어두면 나중에 읽어'));
+    $('dockLamp').className = 'lamp' + (on ? ' g' : ' a');
   }
+  // 아래 대화줄 : 입력칸을 누르면 기록이 위로 펼쳐지고, 바깥을 누르면 접힘. 접혀 있을 때 온 답은 '새 답 n'
+  let seenReplies = -1;
+  const replyCount = () => chatMsgs.filter((m) => m.from === 'claude').length;
+  const dockOpen = () => !$('dockPanel').hidden;
+  function paintNew() { const n = seenReplies < 0 ? 0 : replyCount() - seenReplies; $('dockNew').hidden = n <= 0; $('dockNew').textContent = '새 답 ' + n; }
+  function openDock() { if (dockOpen()) return; $('dockPanel').hidden = false; seenReplies = replyCount(); paintNew(); const b = $('msgs'); b.scrollTop = b.scrollHeight; }
+  function closeDock() { $('dockPanel').hidden = true; }
+  function growChat() { const x = $('chatText'); x.style.height = 'auto'; x.style.height = Math.min(Math.max(x.scrollHeight, 42), 140) + 'px'; x.style.overflowY = x.scrollHeight > 140 ? 'auto' : 'hidden'; }
   function renderChat() {
     const box = $('msgs');
     const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
@@ -491,13 +514,15 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     }
     const replied = chatMsgs.some((m) => m.from === 'claude' && Date.parse(m.at) > waitingSince - 2000);
     const waiting = waitingSince && !replied && Date.now() - waitingSince < 300000;
-    if (waiting) box.append(el('div', 'typing', alive() ? '읽는 중… (보통 1분 안)' : '꺼져 있어 · 켜지면 읽어'));
+    if (waiting) box.append(el('div', 'typing', alive() ? '답 쓰는 중…' : '꺼져 있어 · 켜지면 읽어'));
     if (atBottom || waiting) box.scrollTop = box.scrollHeight;
+    if (dockOpen()) seenReplies = replyCount();
+    paintNew();
   }
   function sendChat() {
     const v = $('chatText').value.trim();
     if (!v || !canWrite || !viewDate) return;
-    $('chatText').value = '';
+    $('chatText').value = ''; growChat();
     waitingSince = Date.now();
     append('chat_' + viewDate, { id: uid(), from: 'me', text: v, at: nowIso() }).catch(writeFailed);
     renderChat();
@@ -546,7 +571,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   // 날짜 바꾸기 · 구독
   function watchDay() {
     for (const k of ['day', 'chk', 'chat', 'cl']) if (subs[k]) subs[k]();
-    dayDoc = null; checks = { done: {}, notes: {} }; chatMsgs = []; cnotes = {};
+    dayDoc = null; checks = { done: {}, notes: {} }; chatMsgs = []; cnotes = {}; seenReplies = -1;
     const date = viewDate;
     subs.day = sub('days_' + date, (v) => { if (date !== viewDate) return; dayDoc = v && isDate(v.date) ? v : null; renderAll(); showTbm(); });
     subs.chk = sub('chk_' + date, (v) => {
@@ -554,7 +579,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       checks = { done: { ...((v && v.done) || {}) }, notes: { ...((v && v.notes) || {}) } };
       renderTasks();
     });
-    subs.chat = subList('chat_' + date, (l) => { if (date !== viewDate) return; chatMsgs = l.slice().sort((a, b) => String(a.at).localeCompare(String(b.at))); renderChat(); });
+    subs.chat = subList('chat_' + date, (l) => { if (date !== viewDate) return; chatMsgs = l.slice().sort((a, b) => String(a.at).localeCompare(String(b.at))); if (seenReplies < 0) seenReplies = replyCount(); renderChat(); });   // 처음 읽은 답은 '새 답'으로 안 셈
     subs.cl = sub('cl_' + date, (v) => { if (date !== viewDate) return; cnotes = { ...((v && v.notes) || {}) }; renderTasks(); });
   }
   function go(date) {
@@ -582,6 +607,11 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     buildTbmForm();
     $('chatForm').addEventListener('submit', (e) => { e.preventDefault(); sendChat(); });
     $('chatText').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendChat(); } });
+    $('chatText').addEventListener('focus', openDock);
+    $('chatText').addEventListener('input', growChat);
+    $('dockClose').addEventListener('click', () => { closeDock(); $('chatText').blur(); });
+    document.addEventListener('pointerdown', (e) => { if (dockOpen() && !$('dock').contains(e.target)) closeDock(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && dockOpen()) { closeDock(); $('chatText').blur(); } });
     document.addEventListener('focusout', () => setTimeout(() => { if (deferred && !tasksBusy()) renderTasks(); }, 0));
     $('tbmForm').addEventListener('submit', (e) => {
       e.preventDefault();
