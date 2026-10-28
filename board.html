@@ -170,7 +170,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
 <div class="wrap">
   <header class="top">
     <div>
-      <div class="eyebrow"><span id="dYear">—</span><span>오늘 업무</span><span class="tag" id="pastTag" hidden>지난 날</span></div>
+      <div class="eyebrow"><span id="dYear">—</span><span>오늘 업무</span></div>
       <h1 id="dTitle">업무판</h1>
       <div class="meta" id="meta"></div>
     </div>
@@ -178,11 +178,6 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       <div class="progress" id="progress" hidden>
         <span class="num" id="progNum">0 / 0</span><span class="lbl">체크</span>
         <div class="bar"><i id="progBar"></i></div>
-      </div>
-      <div class="nav">
-        <button class="btn" id="prevBtn" type="button" aria-label="이전 날" disabled>‹</button>
-        <button class="btn" id="todayBtn" type="button" hidden>오늘로</button>
-        <button class="btn" id="nextBtn" type="button" aria-label="다음 날" disabled>›</button>
       </div>
     </div>
   </header>
@@ -307,7 +302,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   async function append(name, obj) { await ref(name).set({ m: firebase.firestore.FieldValue.arrayUnion(await enc(obj)) }, { merge: true }); }
 
   let canWrite = true;
-  let dates = [], dayDoc = null, viewDate = null, picked = false;
+  let dates = [], dayDoc = null, viewDate = null;
   let checks = { done: {}, notes: {} }, chatMsgs = [], cnotes = {};
   let tbmDate = nextWorkday(kstToday()), tbmDirty = false, tbmDoc = null;
   let statusAt = 0, waitingSince = 0;
@@ -427,16 +422,9 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     const [y, m, dd] = d.date.split('-').map(Number);
     $('dYear').textContent = y;
     $('dTitle').replaceChildren(document.createTextNode(m + '월 ' + dd + '일 '), el('span', 'w', dow(d.date) + '요일'));
-    const t = kstToday();
-    $('pastTag').hidden = d.date === t;
-    $('pastTag').textContent = d.date < t ? '지난 날' : '앞날';
     const meta = $('meta'); meta.replaceChildren();
     for (const a of arr(d.absent)) { const s = el('span'); s.append(el('span', 'k', '휴가'), document.createTextNode(a)); meta.append(s); }
     if (d.tbm && d.tbm.sent) { const s = el('span'); s.append(el('span', 'lamp g'), document.createTextNode('TBM ' + d.tbm.sent + ' 발송')); meta.append(s); }
-    const i = dates.indexOf(viewDate);
-    $('prevBtn').disabled = i < 0 || i >= dates.length - 1;
-    $('nextBtn').disabled = i <= 0;
-    $('todayBtn').hidden = !picked;
   }
   function renderUpcoming() {
     const d = dayDoc; const now = [], next = [];
@@ -569,9 +557,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     subs.chat = subList('chat_' + date, (l) => { if (date !== viewDate) return; chatMsgs = l.slice().sort((a, b) => String(a.at).localeCompare(String(b.at))); renderChat(); });
     subs.cl = sub('cl_' + date, (v) => { if (date !== viewDate) return; cnotes = { ...((v && v.notes) || {}) }; renderTasks(); });
   }
-  function pickDefault() { const t = kstToday(); return dates.find((x) => x <= t) || dates[dates.length - 1] || null; }
-  function go(date, byUser) {
-    picked = byUser && date !== pickDefault();
+  function go(date) {
     if (date !== viewDate) { viewDate = date; watchDay(); }
     renderAll();
   }
@@ -594,9 +580,6 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       await initCrypto();
     } catch (e) { showState('연결 준비에 실패했어. 새로고침해 줘.'); return; }
     buildTbmForm();
-    $('prevBtn').addEventListener('click', () => { const i = dates.indexOf(viewDate); if (i >= 0 && i < dates.length - 1) go(dates[i + 1], true); });
-    $('nextBtn').addEventListener('click', () => { const i = dates.indexOf(viewDate); if (i > 0) go(dates[i - 1], true); });
-    $('todayBtn').addEventListener('click', () => go(pickDefault(), false));
     $('chatForm').addEventListener('submit', (e) => { e.preventDefault(); sendChat(); });
     $('chatText').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendChat(); } });
     document.addEventListener('focusout', () => setTimeout(() => { if (deferred && !tasksBusy()) renderTasks(); }, 0));
@@ -615,10 +598,9 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     subs.index = sub('index', (v, exists) => {
       if (exists && v === undefined) { showState('비밀키가 맞지 않아. 받은 주소 그대로 열어줘.'); $('board').hidden = true; return; }
       dates = arr(v && v.dates).filter(isDate).sort().reverse();
-      if (!dates.length) { showState('아직 올라온 업무가 없어. 아침 TBM 발송 뒤 채워져.'); $('board').hidden = true; return; }
+      if (!dates.includes(kstToday())) { showState('오늘 업무가 아직 안 올라왔어. 아침 TBM 발송 뒤 채워져.'); $('board').hidden = true; $('foot').hidden = true; return; }   // 당일 것만
       showState('');
-      const keep = picked && dates.includes(viewDate);
-      go(keep ? viewDate : pickDefault(), keep);
+      go(kstToday());
     });
     subs.status = sub('status', (v) => { statusAt = (v && Date.parse(v.at)) || 0; paintCState(); });
     setInterval(paintCState, 60000);
