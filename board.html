@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>운영센터 업무판</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>:root{color-scheme:light}html,body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<style>
+/* 운영센터 업무판 : 수배전반 도장색(5Y 7/1 계열) 바탕, 명판(plate) 머리글, 표시등(lamp) 상태.
+   넓은 화면 3열(할 일 · 일정 · 기록), 좁아지면 2열 → 1열 */
+:root{
+  --bg:#ECEBE4; --panel:#F8F8F4; --ink:#1D1E1A; --ink-2:#44453E; --muted:#6F6F66; --line:#D3D1C6;
+  --plate:#2A2C27; --plate-ink:#F1F0E8; --screw:#8A897F;
+  --red:#BB3228; --amber:#8F5F06; --green:#2A7A45; --accent:#2654A0;
+  --font-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#131411; --panel:#1B1C18; --ink:#ECEBE3; --ink-2:#C6C5BB; --muted:#9A998F; --line:#33342E;
+    --plate:#E2E0D4; --plate-ink:#1A1B17; --screw:#9A988C;
+    --red:#EF6155; --amber:#E0A83C; --green:#53B978; --accent:#8AB0F2; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#131411; --panel:#1B1C18; --ink:#ECEBE3; --ink-2:#C6C5BB; --muted:#9A998F; --line:#33342E;
+  --plate:#E2E0D4; --plate-ink:#1A1B17; --screw:#9A988C;
+  --red:#EF6155; --amber:#E0A83C; --green:#53B978; --accent:#8AB0F2; color-scheme:dark;
+}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1320px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px;display:flex;flex-direction:column;gap:22px}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* 머리 */
+.top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:14px 24px;padding-bottom:14px;border-bottom:2px solid var(--ink)}
+.eyebrow{display:flex;align-items:center;gap:8px;font:600 12px/1.4 var(--font-mono);letter-spacing:.08em;color:var(--muted)}
+.tag{font:600 11px/1 var(--font-body);letter-spacing:0;padding:3px 7px;border-radius:3px;color:var(--amber);background:color-mix(in srgb,var(--amber) 14%,transparent)}
+h1{margin:4px 0 6px;font-size:clamp(28px,5.4vw,40px);line-height:1.15;font-weight:700;letter-spacing:-.01em;text-wrap:balance}
+h1 .w{color:var(--muted);font-weight:500}
+.meta{display:flex;flex-wrap:wrap;gap:6px 18px;color:var(--ink-2);font-size:14px}
+.meta span{display:inline-flex;align-items:center;gap:7px}
+.k{font:600 11px/1 var(--font-mono);letter-spacing:.06em;color:var(--muted)}
+.lamp{flex:none;width:9px;height:9px;border-radius:50%;background:var(--muted);box-shadow:0 0 0 3px color-mix(in srgb,var(--muted) 20%,transparent)}
+.lamp.g{background:var(--green);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 22%,transparent)}
+.lamp.r{background:var(--red);box-shadow:0 0 0 3px color-mix(in srgb,var(--red) 22%,transparent)}
+.lamp.a{background:var(--amber);box-shadow:0 0 0 3px color-mix(in srgb,var(--amber) 22%,transparent)}
+.top-r{display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap}
+.progress{display:grid;grid-template-columns:auto auto;align-items:baseline;gap:6px 8px;min-width:150px}
+.progress .num{font:600 22px/1 var(--font-mono);font-variant-numeric:tabular-nums}
+.progress .lbl{font-size:13px;color:var(--muted)}
+.bar{grid-column:1/-1;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--green);transition:width .3s ease}
+.nav{display:flex;gap:6px}
+.btn{min-width:38px;height:36px;padding:0 12px;border:1px solid var(--line);border-radius:6px;background:var(--panel);cursor:pointer}
+.btn:hover:not(:disabled){border-color:var(--ink-2)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.solid{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:600}
+
+/* 명판 */
+.sec{display:flex;flex-direction:column;min-width:0}
+.sec-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;min-height:28px}
+.plate{display:inline-flex;align-items:center;gap:9px;margin:0;padding:5px 11px;background:var(--plate);color:var(--plate-ink);font-size:13px;font-weight:600;letter-spacing:.03em;border-radius:2px}
+.plate::before,.plate::after{content:"";width:4px;height:4px;border-radius:50%;background:var(--screw)}
+.aside{font-size:12.5px;color:var(--muted);display:inline-flex;align-items:center;gap:7px;text-align:right}
+
+/* 꼭 할 것 */
+.alert{border:1.5px solid var(--red);border-radius:6px;background:color-mix(in srgb,var(--red) 7%,var(--panel));padding:12px 14px}
+.alert .plate{background:var(--red);color:var(--panel)}
+.alert .plate::before,.alert .plate::after{background:color-mix(in srgb,var(--panel) 55%,var(--red))}
+.alert .list{border-top:0}
+.alert .item:last-child{border-bottom:0}
+
+/* 3열 */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:30px 28px;align-items:start}
+.col{display:flex;flex-direction:column;gap:26px;min-width:0}
+
+/* 할 일 목록 */
+.list{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.item{border-bottom:1px solid var(--line)}
+.row{display:flex;gap:12px;align-items:flex-start;padding:11px 2px}
+.row input[type=checkbox]{appearance:none;-webkit-appearance:none;flex:none;width:20px;height:20px;margin:2px 0 0;border:1.5px solid var(--ink-2);border-radius:4px;background-color:var(--panel);cursor:pointer}
+.row input[type=checkbox]:checked{border-color:var(--green);background:var(--green) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5 10.5l3.2 3.2L15 6.8' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/17px no-repeat}
+.row input[type=checkbox]:disabled{cursor:default;opacity:.6}
+.body{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.t{font-weight:600;color:var(--ink);cursor:pointer;overflow-wrap:anywhere}
+.n{font-size:14px;color:var(--ink-2);overflow-wrap:anywhere}
+.item.done .t{color:var(--muted);text-decoration:line-through;text-decoration-thickness:1px}
+.item.done .n{color:var(--muted)}
+.chip{display:inline-block;font:600 11px/1 var(--font-body);padding:3px 6px;border-radius:3px;vertical-align:2px;margin-left:2px;text-decoration:none}
+.chip.hi{color:var(--red);background:color-mix(in srgb,var(--red) 12%,transparent)}
+.memo{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 8px;font-size:13.5px}
+.memo-k{font:600 11px/1 var(--font-mono);color:var(--accent);letter-spacing:.04em}
+.memo-v{color:var(--ink);overflow-wrap:anywhere}
+.mini{border:0;background:none;padding:2px 0;font-size:12.5px;color:var(--muted);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.mini:hover:not(:disabled){color:var(--accent)}
+.mini:disabled{display:none}
+.memo-edit{display:flex;gap:6px;margin-top:4px}
+.memo-edit input{flex:1;min-width:0;height:34px;padding:0 10px;border:1px solid var(--ink-2);border-radius:5px;background:var(--panel);font-size:14px}
+.empty{list-style:none;padding:10px 2px;color:var(--muted);font-size:14px;border-bottom:1px solid var(--line)}
+
+/* 다가오는 일정 */
+.timeline{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.ev{display:grid;grid-template-columns:112px minmax(0,1fr);gap:12px;padding:10px 2px;border-bottom:1px solid var(--line)}
+.when{display:flex;flex-direction:column;align-items:flex-start;gap:5px;font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.when .d{font-size:13px;font-weight:600}
+.dday{font-size:11px;font-weight:600;padding:2px 6px;border-radius:3px;border:1px solid var(--line);color:var(--muted)}
+.dday.soon{color:var(--amber);border-color:color-mix(in srgb,var(--amber) 55%,var(--line))}
+.ev.hi .dday{color:var(--red);border-color:color-mix(in srgb,var(--red) 50%,var(--line))}
+.what{display:flex;flex-direction:column;gap:3px;min-width:0}
+.what .t{cursor:default}
+
+/* 회의 때 말할 것 */
+.say{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.say li{padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:6px}
+
+/* TBM 표 */
+.tbl{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+th{font-size:12.5px;font-weight:600;color:var(--ink-2);background:color-mix(in srgb,var(--plate) 7%,var(--panel))}
+td.place{width:7.5em;color:var(--ink-2)}
+
+/* 기록 열 */
+.inputs{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;gap:24px}
+.lead{margin:0;font-size:13.5px;color:var(--ink-2)}
+.claude{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.field{display:flex;gap:6px}
+.field input[type=text],textarea,select,.fill{min-width:0;height:38px;padding:0 10px;border:1px solid var(--line);border-radius:5px;background:var(--bg)}
+.field input[type=text]{flex:1}
+.fill{width:100%}
+.inputs input[type=date]{height:34px;padding:0 6px;border:1px solid var(--line);border-radius:5px;background:var(--bg)}
+textarea{height:auto;min-height:62px;padding:8px 10px;resize:vertical;width:100%;line-height:1.5}
+input::placeholder,textarea::placeholder{color:var(--muted)}
+.loglist,.inlist{list-style:none;margin:10px 0 0;padding:0;border-top:1px solid var(--line)}
+.log-row{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:8px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--line)}
+.log-t{font:500 12.5px/1 var(--font-mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.log-v{overflow-wrap:anywhere}
+.x{border:0;background:none;color:var(--muted);font-size:18px;line-height:1;padding:0 4px;cursor:pointer}
+.x:hover{color:var(--red)}
+.inform{display:flex;flex-direction:column;gap:8px}
+.inform .opts{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;font-size:14px}
+.inform .opts label{display:inline-flex;align-items:center;gap:6px}
+.in-row{padding:9px 0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px}
+.in-top{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.in-date{font:600 12.5px/1 var(--font-mono)}
+.st{font:600 11px/1 var(--font-body);padding:3px 6px;border-radius:3px}
+.st.new{color:var(--amber);background:color-mix(in srgb,var(--amber) 14%,transparent)}
+.st.ok{color:var(--green);background:color-mix(in srgb,var(--green) 14%,transparent)}
+.in-text{grid-column:1;overflow-wrap:anywhere}
+.in-note{grid-column:1;font-size:13px;color:var(--muted)}
+.in-row .x{grid-column:2;grid-row:1/span 2;align-self:start}
+.in-row.is-done .in-text{color:var(--ink-2)}
+.pp-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px}
+.pp{display:flex;flex-direction:column;gap:4px}
+.pp label{font-size:13px;color:var(--ink-2)}
+.pp select{width:100%}
+.tbm-form{display:flex;flex-direction:column;gap:10px}
+.tbm-form .lbl2{font-size:13px;color:var(--ink-2);display:block;margin-bottom:4px}
+.tbm-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.saved{font-size:13px;color:var(--muted)}
+.saved.dirty{color:var(--amber);font-weight:600}
+
+/* Claude와 대화 */
+.chat .msgs{display:flex;flex-direction:column;gap:8px;min-height:140px;max-height:min(55vh,460px);overflow-y:auto;padding:10px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
+.msg{max-width:88%;padding:8px 11px;border-radius:9px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14.5px;line-height:1.5}
+.msg.me{align-self:flex-end;background:var(--ink);color:var(--bg);border-bottom-right-radius:3px}
+.msg.claude{align-self:flex-start;background:var(--panel);border:1px solid var(--line);border-bottom-left-radius:3px}
+.msg.sys{align-self:center;max-width:100%;padding:1px 4px;color:var(--muted);font-size:12.5px;text-align:center}
+.msg .at{display:block;margin-top:3px;font:500 11px/1 var(--font-mono);opacity:.6}
+.who{display:block;margin-bottom:2px;font:600 11px/1 var(--font-mono);letter-spacing:.04em;color:var(--accent)}
+.typing{align-self:flex-start;font-size:13px;color:var(--muted)}
+.chat-form{display:flex;gap:6px;align-items:flex-end;margin-top:8px}
+.chat-form textarea{flex:1;min-height:46px;max-height:180px}
+.cl{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 8px;font-size:13.5px;color:var(--ink-2)}
+.cl .memo-k{color:var(--accent)}
+
+.state{margin:24px 0;padding:18px;border:1px dashed var(--line);border-radius:8px;color:var(--ink-2);text-align:center}
+.foot{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));max-width:calc(100% - 32px);padding:10px 14px;border-radius:6px;background:var(--plate);color:var(--plate-ink);font-size:14px;z-index:20}
+@media (prefers-reduced-motion: reduce){.bar i{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow"><span id="dYear">—</span><span>오늘 업무</span><span class="tag" id="pastTag" hidden>지난 날</span></div>
+      <h1 id="dTitle">업무판</h1>
+      <div class="meta" id="meta"></div>
+    </div>
+    <div class="top-r">
+      <div class="progress" id="progress" hidden>
+        <span class="num" id="progNum">0 / 0</span><span class="lbl">체크</span>
+        <div class="bar"><i id="progBar"></i></div>
+      </div>
+      <button class="btn" id="chatJump" type="button">Claude와 대화</button>
+      <div class="nav">
+        <button class="btn" id="prevBtn" type="button" aria-label="이전 날" disabled>‹</button>
+        <button class="btn" id="todayBtn" type="button" hidden>오늘로</button>
+        <button class="btn" id="nextBtn" type="button" aria-label="다음 날" disabled>›</button>
+      </div>
+    </div>
+  </header>
+
+  <p class="state" id="state">업무판을 불러오는 중…</p>
+
+  <div id="board" hidden>
+    <section class="alert sec" id="alertBox" hidden>
+      <div class="sec-h"><h2 class="plate">오늘 꼭</h2></div>
+      <ul class="list tasks" id="alerts"></ul>
+    </section>
+
+    <div class="grid" style="margin-top:22px">
+      <div class="col">
+        <section class="sec"><div class="sec-h"><h2 class="plate">정기 업무</h2></div><ul class="list tasks" id="regular"></ul></section>
+        <section class="sec"><div class="sec-h"><h2 class="plate">오늘 예정</h2></div><ul class="list tasks" id="today"></ul></section>
+        <section class="sec"><div class="sec-h"><h2 class="plate">대기</h2><span class="aside">진행되면 메모로 남겨</span></div><ul class="list tasks" id="waiting"></ul></section>
+      </div>
+
+      <div class="col">
+        <section class="sec"><div class="sec-h"><h2 class="plate">다가오는 일정</h2></div><ol class="timeline" id="upcoming"></ol></section>
+        <section class="sec"><div class="sec-h"><h2 class="plate">회의 때 말할 것</h2></div><ul class="say" id="meeting"></ul></section>
+        <section class="sec">
+          <div class="sec-h"><h2 class="plate">TBM 잠재위험요인</h2><span class="aside" id="tbmSent"></span></div>
+          <div class="tbl"><table><thead><tr><th>작업 중 잠재위험요인</th><th>장소</th></tr></thead><tbody id="tbmRows"></tbody></table></div>
+        </section>
+      </div>
+
+      <div class="col inputs">
+        <div>
+          <p class="lead">체크·메모·기록·대화는 바로 Claude에게 가고(보통 1분 안), Claude가 이 판에 답하고 위키 업무일지·일정·TBM에 반영해. Claude가 꺼져 있을 땐 적어둔 걸 나중에 읽어.</p>
+        </div>
+
+        <section class="sec chat" id="chatBox">
+          <div class="sec-h"><h2 class="plate">Claude와 대화</h2><span class="aside" id="chatState"><span class="lamp"></span><span>연결 확인 중</span></span></div>
+          <div class="msgs" id="msgs" aria-live="polite"></div>
+          <form class="chat-form" id="chatForm" autocomplete="off">
+            <textarea id="chatText" rows="2" maxlength="2000" placeholder="물어보거나 알려줄 거 · Enter 보내기, Shift+Enter 줄바꿈" aria-label="Claude에게 보낼 말"></textarea>
+            <button class="btn solid" type="submit">보내기</button>
+          </form>
+        </section>
+
+        <section class="sec">
+          <div class="sec-h"><h2 class="plate">오늘 한 일</h2><span class="aside" id="logDate"></span></div>
+          <form class="field" id="logForm" autocomplete="off">
+            <input type="text" id="logText" maxlength="300" placeholder="예: 2층 하나전설 견적 요청함" aria-label="오늘 한 일">
+            <button class="btn solid" type="submit">추가</button>
+          </form>
+          <ul class="loglist" id="logList"></ul>
+        </section>
+
+        <section class="sec">
+          <div class="sec-h"><h2 class="plate">일정 · 할 일 추가</h2></div>
+          <form class="inform" id="inForm" autocomplete="off">
+            <input class="fill" type="text" id="inText" maxlength="300" placeholder="예: 11/5 소방 작동기능점검 입회" aria-label="일정이나 할 일">
+            <div class="opts">
+              <label for="inDate">날짜 <input type="date" id="inDate"></label>
+              <label for="inPri"><input type="checkbox" id="inPri"> 중요</label>
+              <button class="btn solid" type="submit" style="margin-left:auto">추가</button>
+            </div>
+          </form>
+          <ul class="inlist" id="inList"></ul>
+        </section>
+
+        <section class="sec">
+          <div class="sec-h"><h2 class="plate">내일 TBM</h2><span class="aside"><label for="tbmDate" class="k">날짜</label><input type="date" id="tbmDate"></span></div>
+          <form class="tbm-form" id="tbmForm" autocomplete="off">
+            <div class="pp-grid" id="tbmPeople"></div>
+            <div><label class="lbl2" for="tbmWork">작업</label><textarea id="tbmWork" maxlength="500" placeholder="예: 분전반 점검, 발전기 무부하 운전, 공사 입회"></textarea></div>
+            <div><label class="lbl2" for="tbmVendors">출입 업체</label><input class="fill" type="text" id="tbmVendors" maxlength="200" placeholder="예: 조경, 방역, 승강기 점검"></div>
+            <div class="tbm-foot"><span class="saved" id="tbmSaved">아직 저장 안 함</span><button class="btn solid" type="submit">저장</button></div>
+          </form>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <footer class="foot" id="foot" hidden></footer>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script>
+(() => {
+  // 운동 앱과 같은 파이어베이스, 운동 앱 컬렉션(ppld) 안 'bd_해시_' 문서만 씀 — 내용은 주소 # 뒤 비밀키로 암호화 (board.py 와 같은 방식)
+  const FB = {"apiKey": "AIzaSyD-D7JrKxQybk1ts3UPUEM-DY9S0v9Py-w", "authDomain": "automatic-becf5.firebaseapp.com", "projectId": "automatic-becf5", "storageBucket": "automatic-becf5.firebasestorage.app", "messagingSenderId": "610761387610", "appId": "1:610761387610:web:836eae72f3fec1eb09f263"};
+  const $ = (id) => document.getElementById(id);
+  const DOW = ['일', '월', '화', '수', '목', '금', '토'];
+  const PEOPLE = ['센터장', '강파트너', '조파트너', '박파트너'];
+  const STATUS = ['출근', '휴가', '오전 늦게', '출장', '교육', '기타'];
+  const kstNow = () => new Date(Date.now() + 9 * 3600e3);
+  const kstToday = () => kstNow().toISOString().slice(0, 10);
+  const hhmm = () => kstNow().toISOString().slice(11, 16);
+  const isDate = (s) => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
+  const utc = (s) => { const [y, m, d] = s.split('-').map(Number); return Date.UTC(y, m - 1, d); };
+  const isoDay = (t) => new Date(t).toISOString().slice(0, 10);
+  const dow = (s) => DOW[new Date(utc(s)).getUTCDay()];
+  const md = (s) => { const [, m, d] = s.split('-').map(Number); return m + '/' + d; };
+  const nextWorkday = (s) => { let t = utc(s) + 864e5; while ([0, 6].includes(new Date(t).getUTCDay())) t += 864e5; return isoDay(t); };
+  const stamp = (s) => { const t = Date.parse(s); if (!t) return ''; const d = new Date(t + 9 * 3600e3); return (d.getUTCMonth() + 1) + '/' + d.getUTCDate() + ' ' + d.toISOString().slice(11, 16); };
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const uid = () => 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const arr = (v) => (Array.isArray(v) ? v : []);
+  const nowIso = () => new Date().toISOString();
+
+  // 비밀키 : 주소 # 뒤, 한 번 열면 이 브라우저가 기억
+  let SECRET = '';
+  try { SECRET = decodeURIComponent(location.hash.slice(1)).trim(); } catch (e) {}
+  try { if (SECRET) localStorage.setItem('mb_secret', SECRET); else SECRET = localStorage.getItem('mb_secret') || ''; } catch (e) {}
+  window.addEventListener('hashchange', () => location.reload());   // 주소 # 뒤를 바꿔 넣으면 다시 읽음
+
+  // 암호화 : PBKDF2-SHA256 15만 회 → AES-GCM, 저장값 = base64(iv 12바이트 + 암호문)
+  let KEY = null, PFX = '', fs = null;
+  const te = new TextEncoder(), td = new TextDecoder();
+  const toB64 = (u8) => { let s = ''; for (let i = 0; i < u8.length; i += 8192) s += String.fromCharCode.apply(null, u8.subarray(i, i + 8192)); return btoa(s); };
+  const fromB64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+  async function initCrypto() {
+    const h = new Uint8Array(await crypto.subtle.digest('SHA-256', te.encode(SECRET)));
+    PFX = 'bd_' + Array.from(h, (b) => b.toString(16).padStart(2, '0')).join('').slice(0, 16) + '_';
+    const base = await crypto.subtle.importKey('raw', te.encode(SECRET), 'PBKDF2', false, ['deriveKey']);
+    KEY = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: te.encode('meritz-board-v1'), iterations: 150000, hash: 'SHA-256' },
+      base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  }
+  async function enc(obj) {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, KEY, te.encode(JSON.stringify(obj))));
+    const out = new Uint8Array(12 + ct.length); out.set(iv); out.set(ct, 12);
+    return toB64(out);
+  }
+  async function dec(s) {
+    try { const u = fromB64(s); return JSON.parse(td.decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: u.subarray(0, 12) }, KEY, u.subarray(12)))); }
+    catch (e) { return undefined; }
+  }
+  const ref = (name) => fs.collection('ppld').doc(PFX + name);
+  function sub(name, cb) {
+    let seq = 0;
+    return ref(name).onSnapshot(async (s) => {
+      const my = ++seq; const d = s.exists ? s.data() : null;
+      const v = d && typeof d.v === 'string' ? await dec(d.v) : null;
+      if (my === seq) cb(v, !!d);
+    }, () => cb(null, false));
+  }
+  function subList(name, cb) {
+    let seq = 0;
+    return ref(name).onSnapshot(async (s) => {
+      const my = ++seq; const d = s.exists ? s.data() : null; const out = [];
+      for (const x of arr(d && d.m)) { const o = await dec(x); if (o) out.push(o); }
+      if (my === seq) cb(out);
+    }, () => cb([]));
+  }
+  async function put(name, obj) { await ref(name).set({ v: await enc(obj) }); }
+  async function append(name, obj) { await ref(name).set({ m: firebase.firestore.FieldValue.arrayUnion(await enc(obj)) }, { merge: true }); }
+
+  let canWrite = true;
+  let dates = [], dayDoc = null, viewDate = null, picked = false;
+  let checks = { done: {}, notes: {} }, logEntries = [], inbox = [], inboxDone = {}, chatMsgs = [], cnotes = {};
+  let tbmDate = nextWorkday(kstToday()), tbmDirty = false, tbmDoc = null;
+  let statusAt = 0, waitingSince = 0;
+  const subs = {};
+  const pending = new Map();
+  let busy = false, deferred = false, toastTimer = 0;
+
+  function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 3200); }
+  function showState(msg) { $('state').textContent = msg; $('state').hidden = !msg; }
+  function writeFailed() { toast('저장 안 됨 · 인터넷 연결 확인하고 다시 해 줘'); }
+
+  // 쓰기 : 문서마다 한 번에 하나씩, 밀린 건 마지막 것만
+  function save(name, body) { pending.set(name, body); pump(); }
+  async function pump() {
+    if (busy) return;
+    busy = true;
+    try {
+      while (pending.size) {
+        const [name, body] = pending.entries().next().value;
+        pending.delete(name);
+        try { await put(name, body); } catch (e) { writeFailed(); }
+      }
+    } finally { busy = false; }
+  }
+  function addEvent(text, extra) {
+    if (!viewDate) return;
+    append('chat_' + viewDate, Object.assign({ id: uid(), from: 'event', text, at: nowIso() }, extra || {})).catch(writeFailed);
+  }
+
+  // 할 일 목록 (메모 입력 중이면 다 친 뒤에 다시 그림)
+  function tasksBusy() { const a = document.activeElement; return !!(a && a.closest && a.closest('.tasks') && a.tagName === 'INPUT' && a.type === 'text'); }
+  function renderTasks() {
+    if (tasksBusy()) { deferred = true; return; }
+    deferred = false;
+    const d = dayDoc; if (!d) return;
+    const al = arr(d.alerts);
+    $('alertBox').hidden = !al.length;
+    fillList('alerts', al);
+    fillList('regular', d.regular);
+    fillList('today', d.today);
+    fillList('waiting', d.waiting);
+    renderProgress();
+  }
+  function fillList(id, items) {
+    const ul = $(id); ul.replaceChildren();
+    const a = arr(items);
+    if (!a.length) { ul.append(el('li', 'empty', '없음')); return; }
+    for (const it of a) ul.append(itemRow(it));
+  }
+  function itemRow(it) {
+    const id = String(it.id || '');
+    const li = el('li', 'item');
+    const on = !!checks.done[id];
+    if (on) li.classList.add('done');
+    const row = el('div', 'row');
+    const box = document.createElement('input');
+    box.type = 'checkbox'; box.id = 'chk-' + id; box.checked = on; box.disabled = !canWrite || !id;
+    box.addEventListener('change', () => setDone(id, box.checked));
+    const body = el('div', 'body');
+    const lab = el('label', 't'); lab.htmlFor = box.id; lab.textContent = it.text || '';
+    if (it.pri === 'high') lab.append(' ', el('span', 'chip hi', '높음'));
+    body.append(lab);
+    if (it.note) body.append(el('div', 'n', it.note));
+    if (id) body.append(memoLine(id));
+    if (id && cnotes[id]) { const c = el('div', 'cl'); c.append(el('span', 'memo-k', 'Claude'), el('span', null, cnotes[id])); body.append(c); }
+    row.append(box, body); li.append(row);
+    return li;
+  }
+  function memoLine(id) {
+    const line = el('div', 'memo');
+    const v = checks.notes[id];
+    if (v) line.append(el('span', 'memo-k', '메모'), el('span', 'memo-v', v));
+    const b = el('button', 'mini', v ? '고치기' : '메모'); b.type = 'button'; b.disabled = !canWrite;
+    b.addEventListener('click', () => openMemo(line, id));
+    line.append(b);
+    return line;
+  }
+  function openMemo(line, id) {
+    const wrap = el('div', 'memo-edit');
+    const inp = document.createElement('input');
+    inp.type = 'text'; inp.id = 'memo-' + id; inp.maxLength = 300; inp.value = checks.notes[id] || '';
+    inp.placeholder = '진행 상황 한 줄 (예: 견적 요청함)'; inp.setAttribute('aria-label', '메모');
+    const ok = el('button', 'btn solid', '저장'); ok.type = 'button';
+    let finished = false;
+    const done = () => { if (!finished) setNote(id, inp.value.trim()); finished = true; renderSoon(); };
+    ok.addEventListener('pointerdown', (e) => e.preventDefault());
+    ok.addEventListener('click', done);
+    inp.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); done(); }
+      else if (e.key === 'Escape') { finished = true; renderSoon(); }
+    });
+    inp.addEventListener('blur', done);
+    wrap.append(inp, ok);
+    line.replaceWith(wrap);
+    inp.focus();
+  }
+  function renderSoon() { setTimeout(() => { if (tasksBusy()) document.activeElement.blur(); renderTasks(); }, 0); }
+  function pushChecks() { save('chk_' + viewDate, { date: viewDate, done: { ...checks.done }, notes: { ...checks.notes }, at: nowIso() }); }
+  function itemText(id) {
+    for (const k of ['alerts', 'regular', 'today', 'waiting']) { const f = arr(dayDoc && dayDoc[k]).find((x) => String(x.id) === id); if (f) return f.text || id; }
+    return id;
+  }
+  function setDone(id, on) {
+    addEvent((on ? '✓ ' : '↺ ') + itemText(id), { kind: on ? 'check' : 'uncheck', item: id });
+    if (on) checks.done[id] = true; else delete checks.done[id];
+    pushChecks(); renderTasks();
+  }
+  function setNote(id, v) {
+    if ((checks.notes[id] || '') === v) return;
+    addEvent('메모 · ' + itemText(id) + ' → ' + (v || '지움'), { kind: 'memo', item: id });
+    if (v) checks.notes[id] = v; else delete checks.notes[id];
+    pushChecks();
+  }
+  function renderProgress() {
+    const d = dayDoc; if (!d) return;
+    const ids = ['alerts', 'regular', 'today', 'waiting'].flatMap((k) => arr(d[k]).map((x) => String(x.id || ''))).filter(Boolean);
+    const n = ids.filter((i) => checks.done[i]).length;
+    $('progress').hidden = !ids.length;
+    $('progNum').textContent = n + ' / ' + ids.length;
+    $('progBar').style.width = ids.length ? (n / ids.length * 100) + '%' : '0';
+  }
+
+  function renderHeader() {
+    const d = dayDoc; if (!d) return;
+    const [y, m, dd] = d.date.split('-').map(Number);
+    $('dYear').textContent = y;
+    $('dTitle').replaceChildren(document.createTextNode(m + '월 ' + dd + '일 '), el('span', 'w', dow(d.date) + '요일'));
+    const t = kstToday();
+    $('pastTag').hidden = d.date === t;
+    $('pastTag').textContent = d.date < t ? '지난 날' : '앞날';
+    const meta = $('meta'); meta.replaceChildren();
+    for (const a of arr(d.absent)) { const s = el('span'); s.append(el('span', 'k', '휴가'), document.createTextNode(a)); meta.append(s); }
+    if (d.tbm && d.tbm.sent) { const s = el('span'); s.append(el('span', 'lamp g'), document.createTextNode('TBM ' + d.tbm.sent + ' 발송')); meta.append(s); }
+    const i = dates.indexOf(viewDate);
+    $('prevBtn').disabled = i < 0 || i >= dates.length - 1;
+    $('nextBtn').disabled = i <= 0;
+    $('todayBtn').hidden = !picked;
+  }
+  function renderUpcoming() {
+    const d = dayDoc; const ol = $('upcoming'); ol.replaceChildren();
+    const a = arr(d.upcoming).filter((x) => isDate(x.date)).slice().sort((p, q) => p.date.localeCompare(q.date));
+    if (!a.length) { ol.append(el('li', 'empty', '없음')); return; }
+    for (const ev of a) {
+      const li = el('li', 'ev' + (ev.pri === 'high' ? ' hi' : ''));
+      const when = el('div', 'when');
+      when.append(el('span', 'd', isDate(ev.end) ? md(ev.date) + ' ~ ' + md(ev.end) : md(ev.date) + ' (' + dow(ev.date) + ')'));
+      const s = Math.round((utc(ev.date) - utc(d.date)) / 864e5);
+      const e = isDate(ev.end) ? Math.round((utc(ev.end) - utc(d.date)) / 864e5) : s;
+      const tag = ev.label || (s > 0 ? 'D-' + s : e >= 0 ? (s === 0 && e === 0 ? '오늘' : '진행 중') : '지남');
+      when.append(el('span', 'dday' + (s > 0 && s <= 3 ? ' soon' : ''), tag));
+      const what = el('div', 'what');
+      const t = el('div', 't', ev.text || '');
+      if (ev.pri === 'high') t.append(' ', el('span', 'chip hi', '높음'));
+      what.append(t);
+      if (ev.note) what.append(el('div', 'n', ev.note));
+      li.append(when, what); ol.append(li);
+    }
+  }
+  function renderMeeting() {
+    const ul = $('meeting'); ul.replaceChildren();
+    const a = arr(dayDoc.meeting);
+    if (!a.length) { ul.append(el('li', 'empty', '없음')); return; }
+    for (const s of a) ul.append(el('li', null, s));
+  }
+  function renderTbm() {
+    const d = dayDoc; const tb = $('tbmRows'); tb.replaceChildren();
+    const r = arr(d.tbm && d.tbm.risks);
+    $('tbmSent').replaceChildren();
+    if (d.tbm && d.tbm.sent) $('tbmSent').append(el('span', 'lamp g'), document.createTextNode(d.tbm.sent + ' 발송'));
+    if (!r.length) { const tr = el('tr'); const td2 = el('td', null, '아직 없음'); td2.colSpan = 2; tr.append(td2); tb.append(tr); return; }
+    for (const x of r) { const tr = el('tr'); tr.append(el('td', null, x.text || ''), el('td', 'place', x.place || '')); tb.append(tr); }
+  }
+  function renderLog() {
+    $('logDate').textContent = viewDate ? md(viewDate) + ' (' + dow(viewDate) + ') 기록' : '';
+    const ul = $('logList'); ul.replaceChildren();
+    if (!logEntries.length) { ul.append(el('li', 'empty', '아직 없음')); return; }
+    logEntries.forEach((e, i) => {
+      const li = el('li', 'log-row');
+      li.append(el('span', 'log-t', e.at || ''), el('span', 'log-v', e.text || ''));
+      const x = el('button', 'x', '×'); x.type = 'button'; x.disabled = !canWrite; x.setAttribute('aria-label', '지우기');
+      x.addEventListener('click', () => { logEntries = logEntries.filter((_, j) => j !== i); saveLog(); renderLog(); });
+      li.append(x); ul.append(li);
+    });
+  }
+  function saveLog() { save('log_' + viewDate, { date: viewDate, entries: logEntries.map((e) => ({ at: e.at, text: e.text })), at: nowIso() }); }
+  function renderInbox() {
+    const ul = $('inList'); ul.replaceChildren();
+    if (!inbox.length) { ul.append(el('li', 'empty', '아직 없음')); return; }
+    for (const it of inbox) {
+      const handled = inboxDone[it.id];
+      const li = el('li', 'in-row' + (handled ? ' is-done' : ''));
+      const top = el('div', 'in-top');
+      if (isDate(it.date)) top.append(el('span', 'in-date', md(it.date) + ' (' + dow(it.date) + ')'));
+      top.append(el('span', 'st ' + (handled ? 'ok' : 'new'), handled ? '반영됨' : '반영 전'));
+      if (it.pri === 'high') top.append(el('span', 'chip hi', '중요'));
+      li.append(top, el('div', 'in-text', it.text || ''));
+      if (handled) li.append(el('div', 'in-note', handled));
+      ul.append(li);
+    }
+  }
+
+  // Claude와 대화 (Claude 쪽 감시 프로그램이 15초마다 읽고, 5분마다 '대기 중' 신호를 남김)
+  function alive() { return statusAt && Date.now() - statusAt < 12 * 60e3; }
+  function paintCState() {
+    const on = alive();
+    $('chatState').replaceChildren(el('span', 'lamp' + (on ? ' g' : ' a')), el('span', null, on ? 'Claude 연결됨' : 'Claude 꺼져 있음 · 적어두면 나중에 읽어'));
+  }
+  function renderChat() {
+    const box = $('msgs');
+    const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
+    box.replaceChildren();
+    if (!chatMsgs.length) box.append(el('div', 'msg sys', '여기서 바로 물어보거나 알려줘. 체크·메모·기록도 Claude에게 같이 가.'));
+    for (const m of chatMsgs) {
+      const cls = m.from === 'claude' ? 'claude' : m.from === 'me' ? 'me' : 'sys';
+      const d = el('div', 'msg ' + cls);
+      if (cls === 'claude') d.append(el('span', 'who', 'Claude'));
+      d.append(document.createTextNode(m.text || ''));
+      if (cls !== 'sys') d.append(el('span', 'at', stamp(m.at).split(' ')[1] || ''));
+      box.append(d);
+    }
+    const replied = chatMsgs.some((m) => m.from === 'claude' && Date.parse(m.at) > waitingSince - 2000);
+    const waiting = waitingSince && !replied && Date.now() - waitingSince < 300000;
+    if (waiting) box.append(el('div', 'typing', alive() ? 'Claude가 읽는 중… (보통 1분 안)' : 'Claude가 꺼져 있어 · 켜지면 읽어'));
+    if (atBottom || waiting) box.scrollTop = box.scrollHeight;
+  }
+  function sendChat() {
+    const v = $('chatText').value.trim();
+    if (!v || !canWrite || !viewDate) return;
+    $('chatText').value = '';
+    waitingSince = Date.now();
+    append('chat_' + viewDate, { id: uid(), from: 'me', text: v, at: nowIso() }).catch(writeFailed);
+    renderChat();
+    setTimeout(renderChat, 301000);
+  }
+
+  // 내일 TBM
+  function buildTbmForm() {
+    const box = $('tbmPeople');
+    PEOPLE.forEach((p, i) => {
+      const w = el('div', 'pp');
+      const lab = el('label', null, p); lab.htmlFor = 'pp-' + i;
+      const sel = document.createElement('select'); sel.id = 'pp-' + i;
+      for (const s of STATUS) { const o = el('option', null, s); o.value = s; sel.append(o); }
+      sel.addEventListener('change', markDirty);
+      w.append(lab, sel); box.append(w);
+    });
+    $('tbmWork').addEventListener('input', markDirty);
+    $('tbmVendors').addEventListener('input', markDirty);
+    $('tbmDate').value = tbmDate;
+    $('tbmDate').addEventListener('change', () => { if (!isDate($('tbmDate').value)) return; tbmDate = $('tbmDate').value; tbmDirty = false; watchTbm(); });
+  }
+  function markDirty() { tbmDirty = true; $('tbmSaved').textContent = '저장 안 됨'; $('tbmSaved').classList.add('dirty'); }
+  function fillTbm(src) {
+    PEOPLE.forEach((p, i) => { const v = src && src.people && src.people[p]; $('pp-' + i).value = STATUS.includes(v) ? v : '출근'; });
+    $('tbmWork').value = (src && src.work) || '';
+    $('tbmVendors').value = (src && src.vendors) || '';
+  }
+  function tbmDefaults() {
+    const n = dayDoc && dayDoc.nextTbm;
+    return n && n.date === tbmDate ? { people: n.people || {}, work: n.work || '', vendors: n.vendors || '' } : null;
+  }
+  function showTbm() {
+    if (tbmDirty) return;
+    fillTbm(tbmDoc || tbmDefaults());
+    $('tbmSaved').classList.remove('dirty');
+    $('tbmSaved').textContent = tbmDoc ? '저장됨 ' + stamp(tbmDoc.at) : '아직 저장 안 함';
+  }
+  function watchTbm() {
+    if (subs.tbm) subs.tbm();
+    tbmDoc = null; showTbm();
+    const date = tbmDate;
+    subs.tbm = sub('tbm_' + date, (v) => { if (date !== tbmDate || pending.has('tbm_' + date)) return; tbmDoc = v || null; showTbm(); });
+  }
+
+  // 날짜 바꾸기 · 구독
+  function watchDay() {
+    for (const k of ['day', 'chk', 'log', 'chat', 'cl']) if (subs[k]) subs[k]();
+    dayDoc = null; checks = { done: {}, notes: {} }; logEntries = []; chatMsgs = []; cnotes = {};
+    const date = viewDate;
+    subs.day = sub('days_' + date, (v) => { if (date !== viewDate) return; dayDoc = v && isDate(v.date) ? v : null; renderAll(); showTbm(); });
+    subs.chk = sub('chk_' + date, (v) => {
+      if (date !== viewDate || pending.has('chk_' + date)) return;
+      checks = { done: { ...((v && v.done) || {}) }, notes: { ...((v && v.notes) || {}) } };
+      renderTasks();
+    });
+    subs.log = sub('log_' + date, (v) => {
+      if (date !== viewDate || pending.has('log_' + date)) return;
+      logEntries = arr(v && v.entries).filter((e) => e && typeof e.text === 'string').map((e) => ({ at: String(e.at || ''), text: e.text }));
+      renderLog();
+    });
+    subs.chat = subList('chat_' + date, (l) => { if (date !== viewDate) return; chatMsgs = l.slice().sort((a, b) => String(a.at).localeCompare(String(b.at))); renderChat(); });
+    subs.cl = sub('cl_' + date, (v) => { if (date !== viewDate) return; cnotes = { ...((v && v.notes) || {}) }; renderTasks(); });
+  }
+  function pickDefault() { const t = kstToday(); return dates.find((x) => x <= t) || dates[dates.length - 1] || null; }
+  function go(date, byUser) {
+    picked = byUser && date !== pickDefault();
+    if (date !== viewDate) { viewDate = date; watchDay(); }
+    renderAll();
+  }
+  function renderAll() {
+    const d = dayDoc;
+    $('board').hidden = !d; $('foot').hidden = !d;
+    if (!d) return;
+    renderHeader(); renderTasks(); renderUpcoming(); renderMeeting(); renderTbm(); renderLog(); renderInbox(); renderChat(); paintCState();
+    $('foot').textContent = 'Claude가 올린 시각 ' + (stamp(d.updated) || '—') + ' · 매일 아침 TBM 발송 뒤 채워져 · 체크·메모·기록·대화는 PC와 폰 어디서나 같이 보여';
+  }
+
+  // 시작
+  (async () => {
+    if (!SECRET) { showState('주소 끝에 #비밀키를 붙여서 열어줘.'); return; }
+    if (!window.crypto || !crypto.subtle) { showState('이 브라우저는 암호화를 지원하지 않아. 크롬·엣지 최신 버전으로 열어줘.'); return; }
+    try {
+      firebase.initializeApp(FB);
+      fs = firebase.firestore();
+      fs.settings({ experimentalAutoDetectLongPolling: true, merge: true });
+      await initCrypto();
+    } catch (e) { showState('연결 준비에 실패했어. 새로고침해 줘.'); return; }
+    buildTbmForm();
+    $('prevBtn').addEventListener('click', () => { const i = dates.indexOf(viewDate); if (i >= 0 && i < dates.length - 1) go(dates[i + 1], true); });
+    $('nextBtn').addEventListener('click', () => { const i = dates.indexOf(viewDate); if (i > 0) go(dates[i - 1], true); });
+    $('todayBtn').addEventListener('click', () => go(pickDefault(), false));
+    $('chatJump').addEventListener('click', () => { $('chatBox').scrollIntoView({ block: 'start' }); $('chatText').focus({ preventScroll: true }); });
+    $('chatForm').addEventListener('submit', (e) => { e.preventDefault(); sendChat(); });
+    $('chatText').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendChat(); } });
+    document.addEventListener('focusout', () => setTimeout(() => { if (deferred && !tasksBusy()) renderTasks(); }, 0));
+    $('logForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const v = $('logText').value.trim();
+      if (!v || !viewDate) return;
+      addEvent('기록 · ' + v, { kind: 'log' });
+      logEntries = logEntries.concat([{ at: hhmm(), text: v }]);
+      $('logText').value = '';
+      saveLog(); renderLog();
+    });
+    $('inForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = $('inText').value.trim();
+      if (!text) return;
+      const date = isDate($('inDate').value) ? $('inDate').value : null;
+      const pri = $('inPri').checked ? 'high' : null;
+      const item = { id: uid(), text, date, pri, created: nowIso() };
+      append('inbox', item).then(() => toast('추가됨 · Claude가 읽고 반영해')).catch(writeFailed);
+      addEvent('일정 추가 · ' + (date ? md(date) + ' ' : '') + text + (pri ? ' (중요)' : ''), { kind: 'inbox', item: item.id });
+      $('inText').value = ''; $('inDate').value = ''; $('inPri').checked = false;
+    });
+    $('tbmForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const people = {};
+      PEOPLE.forEach((p, i) => { people[p] = $('pp-' + i).value; });
+      const body = { date: tbmDate, people, work: $('tbmWork').value.trim(), vendors: $('tbmVendors').value.trim(), at: nowIso() };
+      const off = PEOPLE.filter((p) => people[p] !== '출근').map((p) => p + ' ' + people[p]).join(', ');
+      addEvent('내일 TBM 저장 · ' + md(tbmDate) + ' · ' + (off || '전원 출근') + (body.work ? ' · 작업: ' + body.work : '') + (body.vendors ? ' · 업체: ' + body.vendors : ''), { kind: 'tbm', item: tbmDate });
+      tbmDoc = body; tbmDirty = false;
+      save('tbm_' + tbmDate, body);
+      showTbm();
+      toast('내일 TBM 저장됨');
+    });
+    subs.index = sub('index', (v, exists) => {
+      if (exists && v === undefined) { showState('비밀키가 맞지 않아. 받은 주소 그대로 열어줘.'); $('board').hidden = true; return; }
+      dates = arr(v && v.dates).filter(isDate).sort().reverse();
+      if (!dates.length) { showState('아직 올라온 업무가 없어. 아침 TBM 발송 뒤 Claude가 채워.'); $('board').hidden = true; return; }
+      showState('');
+      const keep = picked && dates.includes(viewDate);
+      go(keep ? viewDate : pickDefault(), keep);
+    });
+    subs.inbox = subList('inbox', (l) => { inbox = l.slice().sort((a, b) => String(b.created).localeCompare(String(a.created))).slice(0, 12); renderInbox(); });
+    subs.inboxDone = sub('inbox_done', (v) => { inboxDone = v || {}; renderInbox(); });
+    subs.status = sub('status', (v) => { statusAt = (v && Date.parse(v.at)) || 0; paintCState(); });
+    setInterval(paintCState, 60000);
+    watchTbm();
+  })();
+})();
+</script>
+</body>
+</html>
