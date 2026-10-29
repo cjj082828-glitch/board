@@ -8,13 +8,15 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>:root{color-scheme:dark}html,body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <style>
-/* 운영센터 업무판 : 미드나잇 네이비 바탕 + 연보라 포인트 (어두운 화면만, 사용자 10/28 시안 6), 파랑 하나(누를 것·답), 상태는 표시등 색(초록 완료 · 주황 임박 · 빨강 중요).
+/* 운영센터 업무판 : 차콜 바탕 + 하늘색 포인트 (사용자 10/29 색 시안 B — "너무 어둡다", "보라색도 별로", 칸 구분 위해 칸을 바탕보다 밝게), 상태는 표시등 색(초록 완료 · 주황 임박 · 빨강 중요).
    넓은 화면 3열(할 일 · 일정 · 입력), 좁아지면 2열 → 1열 */
 :root{
-  --bg:#070E1B; --surface:#101725; --sunken:#0B1320; --ink:#E5ECF8; --ink-2:#ADB8CB; --muted:#7C8799; --line:#222A39;
-  --accent:#B5A9EF; --accent-ink:#080F1C; --red:#E47B80; --amber:#E5B568; --green:#78C89E;
+  --bg:#24282E; --surface:#3B424D; --sunken:#30363F; --ink:#F1F3F6; --ink-2:#CED3DA; --muted:#AEB5BF; --line:#535C69;
+  --accent:#5AB0FF; --accent-ink:#0A1726; --red:#F28A8A; --amber:#F2B95C; --green:#7DD3A0;
   --font:"Pretendard Variable",Pretendard,"Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
   --r-card:14px; --r-ctl:8px; color-scheme:dark;
+  --c1:#5AB0FF; --c2:#45CFB9; --c3:#F2B95C; --c4:#F28A8A; --c5:#A6D96A;   /* 자료 색 5가지 : 하늘·청록·주황·산호·연두 (장·카드마다 돌아가며) */
+  --up:#F28A8A; --down:#45CFB9; --bar0:#F2B95C; --bar1:#5AB0FF;   /* 늘어남·줄어듦, 막대 작년(주황)·올해(하늘) */
 }
 body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;font-feature-settings:"tnum" 0}
 .wrap{max-width:1320px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:22px calc(100px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:20px}
@@ -61,8 +63,10 @@ body[data-tab="rep"] #state,body[data-tab="rep"] #board .grid,body[data-tab="rep
 body:not([data-tab="rep"]) #repPage{display:none!important}
 
 /* 자료 : 목록 → 한 장씩 넘겨 보는 슬라이드 */
+/* 자료 칸 안은 흰 바탕 (사용자 10/29 "자료 쪽은 칸 안 배경은 흰색으로 하자") — 칸 안에서만 색 값을 밝은 화면용으로 바꿔 씀 */
+.slide,.rep-card{--surface:#FFFFFF;--bg:#FFFFFF;--sunken:#F3F5F8;--ink:#172131;--ink-2:#475366;--muted:#5F6A7D;--line:#D5DCE5;--c1:#1A64C4;--c2:#0A7466;--c3:#985A05;--c4:#B8323C;--c5:#357029;--up:#B8323C;--down:#0A7466;--bar0:#E3A740;--bar1:#1A64C4;color:var(--ink);color-scheme:light}   /* 흰 바탕 글씨 대비 4.5 이상 (사용자 "거기에 맞춰서 색도 시인성 좋게") */
 .rep-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
-.rep-card{display:flex;flex-direction:column;gap:6px;text-align:left;padding:16px 18px;border:1px solid var(--line);border-radius:var(--r-card);background:var(--surface);cursor:pointer;min-width:0}
+.rep-card{display:flex;flex-direction:column;gap:6px;text-align:left;padding:16px 18px;border:1px solid var(--line);border-left:5px solid var(--k,var(--c1));border-radius:var(--r-card);background:var(--surface);cursor:pointer;min-width:0}
 .rep-card:hover{border-color:color-mix(in srgb,var(--accent) 55%,var(--line))}
 .rep-date{font-size:12px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
 .rep-t{font-size:16px;font-weight:700;overflow-wrap:anywhere}
@@ -73,7 +77,8 @@ body:not([data-tab="rep"]) #repPage{display:none!important}
 .deck-h{display:flex;align-items:center;gap:12px;min-width:0}
 .deck-t{font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .deck-n{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
-.slide{display:flex;flex-direction:column;gap:16px;padding:clamp(18px,3.4vw,40px);border:1px solid var(--line);border-radius:16px;background:var(--surface);min-height:340px;overflow:auto;touch-action:pan-y;user-select:none}
+.slide{display:flex;flex-direction:column;gap:16px;padding:clamp(18px,3.4vw,40px);border:1px solid var(--line);border-top:5px solid var(--sc,var(--c1));border-radius:16px;background:var(--surface);min-height:340px;overflow:auto;touch-action:pan-y;user-select:none}
+.slide.k-title .s-title{font-size:clamp(24px,3.4vw,42px)}
 @media (min-width:880px){.slide{aspect-ratio:16/9;min-height:0}}
 .deck-nav{display:flex;align-items:center;justify-content:center;gap:12px}
 .tab[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
@@ -83,33 +88,37 @@ body:not([data-tab="rep"]) #repPage{display:none!important}
 .dots{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
 .dot{width:9px;height:9px;border-radius:50%;border:0;padding:0;background:var(--line);cursor:pointer}
 .dot.on{background:var(--accent)}
-.s-kicker{font-size:13px;font-weight:700;letter-spacing:.06em;color:var(--accent)}
+.s-kicker{align-self:flex-start;font-size:13px;font-weight:700;letter-spacing:.04em;padding:3px 10px;border-radius:999px;color:var(--sc);background:color-mix(in srgb,var(--sc) 12%,transparent)}
 .s-title{margin:0;font-size:clamp(20px,2.6vw,32px);font-weight:800;letter-spacing:-.02em;line-height:1.25;text-wrap:balance}
 .s-sub{font-size:clamp(14px,1.4vw,17px);color:var(--ink-2)}
-.s-big{margin-top:auto;font-size:clamp(36px,6vw,72px);font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--accent)}
+.s-big{margin-top:auto;font-size:clamp(40px,7vw,84px);font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--sc)}
+h3.s-title{padding-left:12px;border-left:4px solid var(--sc)}
 .s-note{margin-top:auto;font-size:12.5px;color:var(--muted)}
 .s-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
-.s-stat{padding:14px 16px;border-radius:12px;background:var(--bg);border:1px solid var(--line);display:flex;flex-direction:column;gap:4px;min-width:0}
+.s-stat{padding:14px 16px;border-radius:12px;background:color-mix(in srgb,var(--k) 10%,var(--bg));border:1px solid color-mix(in srgb,var(--k) 35%,var(--line));border-top:4px solid var(--k);display:flex;flex-direction:column;gap:4px;min-width:0}
 .s-stat .k{font-size:12.5px;color:var(--ink-2)}
-.s-stat .v{font-size:clamp(22px,2.6vw,32px);font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.s-stat .v{font-size:clamp(22px,2.6vw,32px);font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--k)}
 .s-stat .u{font-size:13px;font-weight:600;color:var(--ink-2);margin-left:4px}
 .s-stat .d{font-size:12.5px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.up{color:var(--up)!important;font-weight:700}.down{color:var(--down)!important;font-weight:700}   /* 늘어남 = 산호, 줄어듦 = 청록 */
 .s-legend{display:flex;gap:16px;font-size:12.5px;color:var(--ink-2)}
-.s-legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px;background:var(--muted)}
-.s-legend span.b::before{background:var(--accent)}
+.s-legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px;background:var(--bar0)}
+.s-legend span.b::before{background:var(--bar1)}
 .s-bars{display:flex;flex-direction:column;gap:12px}
 .s-group{display:grid;grid-template-columns:minmax(84px,150px) minmax(0,1fr);gap:4px 12px;align-items:center}
 .s-group .g{font-size:13.5px;font-weight:600;color:var(--ink-2);grid-row:span 2}
 .s-bar{display:flex;align-items:center;gap:8px;min-width:0}
-.s-bar i{flex:none;display:block;height:14px;border-radius:4px;background:var(--muted)}
-.s-bar.b i{background:var(--accent)}
+.s-bar i{flex:none;display:block;height:16px;border-radius:4px;background:var(--bar0)}
+.s-bar.b i{background:var(--bar1)}
 .s-bar span{font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--ink-2);white-space:nowrap}
 .s-tw{overflow-x:auto}
 .s-table{width:100%;border-collapse:collapse;font-size:clamp(13px,1.3vw,15px)}
 .s-table th,.s-table td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .s-table th:first-child,.s-table td:first-child{text-align:left}
-.s-table th{font-size:12.5px;color:var(--ink-2);font-weight:600}
-.s-list{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:10px;font-size:clamp(14px,1.5vw,18px);line-height:1.5}
+.s-table th{font-size:12.5px;color:var(--ink);font-weight:700;background:color-mix(in srgb,var(--sc) 22%,transparent)}
+.s-table tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--ink) 4%,transparent)}
+.s-list{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:10px;font-size:clamp(14px,1.5vw,18px);line-height:1.5}
+.s-list li::marker{color:var(--sc);font-size:1.2em}
 
 /* 로그인 (사용자 10/29 "로그인해야 되게, 아이디 비밀번호" → "자동 로그인 말고 아이디 저장만") */
 .auth{max-width:380px;width:100%;margin:6vh auto 0;padding:26px 24px;border:1px solid var(--line);border-radius:var(--r-card);background:var(--surface);display:flex;flex-direction:column;gap:14px}
@@ -123,11 +132,14 @@ body:not([data-tab="rep"]) #repPage{display:none!important}
 .auth .btn{height:42px}
 
 /* 카드 */
-.grid{display:grid;grid-template-columns:minmax(0,1fr);grid-template-areas:"tasks" "sched";gap:20px;align-items:start}
-.c-tasks{grid-area:tasks}.c-sched{grid-area:sched}
-@media (min-width:880px){.grid{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);grid-template-areas:"tasks sched"}}   /* 두 칸만 (사용자 10/29) */
+.grid{display:grid;grid-template-columns:minmax(0,1fr);grid-template-areas:"today" "tasks" "sched";gap:20px;align-items:start}
+.c-today{grid-area:today}.c-tasks{grid-area:tasks}.c-sched{grid-area:sched}
+@media (min-width:880px){.grid{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);grid-template-areas:"today today" "tasks sched"}}   /* 두 칸 + 오늘 업무는 두 칸 너비 (사용자 10/29) */
+@media (min-width:880px){#todayList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:32px}#todayList .item:nth-last-child(2):nth-child(odd){border-bottom:0}}
+.sec-today .plate{font-size:16.5px}
+.sec-today .t{font-size:16px}
 .col{display:flex;flex-direction:column;gap:20px;min-width:0}
-.sec{display:flex;flex-direction:column;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);padding:16px 18px 8px}
+.sec{display:flex;flex-direction:column;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);padding:16px 18px 8px;box-shadow:0 2px 10px color-mix(in srgb,#000 28%,transparent)}
 .sec-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
 .plate{margin:0;font-size:15px;font-weight:700;letter-spacing:-.01em;color:var(--ink)}
 .aside{font-size:12.5px;color:var(--muted);display:inline-flex;align-items:center;gap:7px;text-align:right}
@@ -295,8 +307,11 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
 
   <div id="board" hidden>
     <div class="grid">
+      <div class="col c-today">
+        <section class="sec sec-today"><div class="sec-h"><h2 class="plate">오늘 업무</h2></div><ul class="list tasks" id="todayList"></ul></section>
+      </div>
+
       <div class="col c-tasks">
-        <section class="sec"><div class="sec-h"><h2 class="plate">오늘 업무</h2></div><ul class="list tasks" id="todayList"></ul></section>
         <section class="sec"><div class="sec-h"><h2 class="plate">이번 주 예정 업무</h2></div><ul class="list tasks" id="weekList"></ul></section>
         <section class="sec"><div class="sec-h"><h2 class="plate">해야 될 업무</h2></div><ul class="list tasks" id="waiting"></ul></section>
         <section class="sec"><div class="sec-h"><h2 class="plate">협력사 업무지시</h2></div><ul class="list tasks" id="orders"></ul></section>
@@ -762,14 +777,14 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     $('deck').hidden = true;
     const box = $('repList'); box.hidden = false; box.replaceChildren();
     if (!repIndex.length) { box.append(el('p', 'rep-empty', '아직 올린 자료가 없어. 정리해 달라고 하면 여기에 올려둘게.')); return; }
-    for (const r of repIndex) {
-      const b = el('button', 'rep-card'); b.type = 'button';
+    repIndex.forEach((r, i) => {
+      const b = el('button', 'rep-card'); b.type = 'button'; b.style.setProperty('--k', CK(i));
       b.append(el('span', 'rep-date', isDate(r.date) ? md(r.date) + ' (' + dow(r.date) + ')' : ''), el('span', 'rep-t', r.title || ''));
       if (r.sub) b.append(el('span', 'rep-s', r.sub));
       if (r.slides) b.append(el('span', 'rep-n', r.slides + '장'));
       b.addEventListener('click', () => openReport(String(r.id)));
       box.append(b);
-    }
+    });
   }
   function openReport(id) {
     repOpen = id; repDoc = null; slideAt = 0;
@@ -788,15 +803,19 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     $('slides').hidden = one; $('slide').hidden = !one; $('deckNav').hidden = !one;
     if (!one) {   // 쭉 보기 : 모든 장을 위에서 아래로
       $('deckNum').textContent = sl.length ? sl.length + '장' : '';
-      $('slides').replaceChildren(...sl.map((x, i) => { const s = el('div', 'slide'); s.append(...slideBody(x), el('div', 's-pg', (i + 1) + ' / ' + sl.length)); return s; }));
+      $('slides').replaceChildren(...sl.map((x, i) => { const s = el('div'); paintSlide(s, x, i); s.append(...slideBody(x), el('div', 's-pg', (i + 1) + ' / ' + sl.length)); return s; }));
       return;
     }
     $('deckNum').textContent = sl.length ? (slideAt + 1) + ' / ' + sl.length : '';
     $('prevSlide').disabled = slideAt <= 0; $('nextSlide').disabled = slideAt >= sl.length - 1;
     const dots = $('dots'); dots.replaceChildren();
     sl.forEach((_, i) => { const b = el('button', 'dot' + (i === slideAt ? ' on' : '')); b.type = 'button'; b.setAttribute('aria-label', (i + 1) + '장'); b.addEventListener('click', () => { slideAt = i; renderDeck(); }); dots.append(b); });
+    if (sl.length) paintSlide($('slide'), sl[slideAt], slideAt);
     $('slide').replaceChildren(...(sl.length ? slideBody(sl[slideAt]) : []));
   }
+  const CK = (i) => 'var(--c' + (i % 5 + 1) + ')';
+  const trend = (s) => { const m = /([+-])\d+(?:\.\d+)?%/.exec(String(s)); return m ? (m[1] === '+' ? 'up' : 'down') : ''; };   // '+3.6%' 늘어남, '-0.7%' 줄어듦
+  function paintSlide(node, x, i) { node.className = 'slide k-' + (x.type || 'bullets'); node.style.setProperty('--sc', CK(i)); }   // 장 종류는 k- (s- 는 안쪽 요소 이름과 겹침)
   function slideBody(x) {   // 장 종류 : title · stats · bars · table · bullets
     const out = [], t = x.type || 'bullets';
     if (x.kicker) out.push(el('div', 's-kicker', x.kicker));
@@ -805,13 +824,13 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     if (t === 'title' && x.big) out.push(el('div', 's-big', x.big));
     if (t === 'stats') {
       const g = el('div', 's-stats');
-      for (const s of arr(x.items)) {
-        const c = el('div', 's-stat'); const v = el('div', 'v', s.value || '');
+      arr(x.items).forEach((s, j) => {
+        const c = el('div', 's-stat'); c.style.setProperty('--k', CK(j)); const v = el('div', 'v', s.value || '');
         if (s.unit) v.append(el('span', 'u', s.unit));
         c.append(el('div', 'k', s.label || ''), v);
-        if (s.delta) c.append(el('div', 'd', s.delta));
+        if (s.delta) c.append(el('div', 'd ' + trend(s.delta), s.delta));
         g.append(c);
-      }
+      });
       out.push(g);
     } else if (t === 'bars') {
       const lg = el('div', 's-legend'); arr(x.legend).forEach((n, i) => lg.append(el('span', i ? 'b' : null, n))); out.push(lg);
@@ -825,7 +844,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     } else if (t === 'table') {
       const w = el('div', 's-tw'), tb = el('table', 's-table'), hr = el('tr'), body = el('tbody');
       arr(x.head).forEach((h) => hr.append(el('th', null, h)));
-      arr(x.rows).forEach((r) => { const tr = el('tr'); arr(r).forEach((c) => tr.append(el('td', null, String(c)))); body.append(tr); });
+      arr(x.rows).forEach((r) => { const tr = el('tr'); arr(r).forEach((c) => tr.append(el('td', /^[+-]\d+(\.\d+)?%$/.test(String(c)) ? trend(c) : null, String(c)))); body.append(tr); });
       const th = el('thead'); th.append(hr); tb.append(th, body); w.append(tb); out.push(w);
     } else if (t === 'bullets') {
       const ul = el('ul', 's-list'); arr(x.items).forEach((s) => ul.append(el('li', null, s))); out.push(ul);
