@@ -51,7 +51,13 @@ h1 .w{color:var(--muted);font-weight:500}
 .btn.solid:hover:not(:disabled){filter:brightness(1.06)}
 
 /* 페이지 탭 : 오늘 업무 | 자료 (사용자 10/29 "대시보드에 페이지 2개, 2페이지에 정리한 자료를 PPT처럼") */
-.tabs{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tabs{display:flex;align-items:center;gap:8px;flex-wrap:wrap;position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--bg);padding-block:8px;margin-block:-8px}   /* 아래로 내려도 탭이 화면 위에 붙어 있게 (사용자 10/29 "스크롤 내려간 상태에서 전환하려면 다시 위까지 올려야 돼서 불편") */
+/* 앱에서 맨 위에서 아래로 당기면 새로고침 (운동 앱과 같은 방식, 사용자 10/29) */
+#ptr{position:fixed;top:0;left:0;right:0;height:0;overflow:hidden;display:flex;align-items:flex-end;justify-content:center;gap:8px;padding-bottom:10px;color:var(--muted);font-size:13px;font-weight:600;background:var(--bg);z-index:12;pointer-events:none}
+#ptrIcon{font-size:16px;transition:transform .2s}
+#ptr.ready #ptrIcon{transform:rotate(180deg)}
+#ptr.spin #ptrIcon{animation:ptrSpin .7s linear infinite}
+@keyframes ptrSpin{to{transform:rotate(360deg)}}
 .seg{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
 .tab{height:34px;padding:0 14px;border:0;border-radius:9px;background:none;color:var(--ink-2);font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
 .tab[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
@@ -257,6 +263,10 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
 .att-btn{flex:none;height:42px;padding:0 12px}
 .msg .att{display:block;max-width:220px;max-height:220px;min-width:60px;min-height:60px;margin:2px 0 4px;border-radius:10px;background:var(--sunken);cursor:zoom-in}
 .msg .att.big{max-width:100%;max-height:none;cursor:zoom-out}
+.att-file{display:flex;flex-direction:column;gap:1px;max-width:260px;min-width:0;margin:2px 0 4px;padding:8px 11px;border:1px solid color-mix(in srgb,currentColor 32%,transparent);border-radius:10px;background:color-mix(in srgb,currentColor 9%,transparent);color:inherit;font:inherit;text-align:left;cursor:pointer}
+.att-file:disabled{cursor:progress;opacity:.7}
+.af-n{font-size:13.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.af-s{font-size:12px;opacity:.78}
 
 .state{margin:24px 0;padding:18px;border:1px dashed var(--line);border-radius:var(--r-card);color:var(--ink-2);text-align:center;background:var(--surface)}
 .foot{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
@@ -266,6 +276,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
 </head>
 <body>
 
+<div id="ptr" aria-hidden="true"><span id="ptrIcon">↓</span><span id="ptrText">당겨서 새로고침</span></div>
 <div class="wrap">
   <header class="top">
     <div>
@@ -338,15 +349,15 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     <div class="dock" id="dock">
       <div class="dock-in">
         <div class="dock-panel" id="dockPanel" hidden>
-          <div class="dock-h"><h2 class="plate">대화</h2><span class="aside" id="chatState"><span class="lamp"></span><span>연결 확인 중</span></span><button class="x" id="dockClose" type="button" aria-label="대화 접기">×</button></div>
+          <div class="dock-h"><h2 class="plate">메모</h2><span class="aside" id="chatState"><span class="lamp"></span><span>연결 확인 중</span></span><button class="x" id="dockClose" type="button" aria-label="접기">×</button></div>
           <div class="msgs" id="msgs" aria-live="polite"></div>
         </div>
         <form class="chat-form" id="chatForm" autocomplete="off">
           <span class="lamp" id="dockLamp"></span>
-          <textarea id="chatText" rows="1" maxlength="2000" placeholder="물어보거나 알려줄 거 · Enter 보내기" aria-label="보낼 말"></textarea>
-          <span class="dock-new" id="dockNew" hidden>새 답</span>
-          <button class="btn att-btn" type="button" id="attBtn" aria-label="사진 붙이기">사진</button><input type="file" id="chatImg" accept="image/*" hidden>
-          <button class="btn solid" type="submit">보내기</button>
+          <textarea id="chatText" rows="1" maxlength="2000" placeholder="메모" aria-label="메모"></textarea>
+          <span class="dock-new" id="dockNew" hidden>새 글</span>
+          <button class="btn att-btn" type="button" id="attBtn" aria-label="사진·파일 붙이기">첨부</button><input type="file" id="chatImg" hidden>
+          <button class="btn solid" type="submit">등록</button>
         </form>
       </div>
     </div>
@@ -634,14 +645,14 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   function alive() { return statusAt && Date.now() - statusAt < 12 * 60e3; }
   function paintCState() {
     const on = alive();
-    $('chatState').replaceChildren(el('span', 'lamp' + (on ? ' g' : ' a')), el('span', null, on ? '연결 중' : '꺼져 있음 · 적어두면 나중에 읽어'));
+    $('chatState').replaceChildren(el('span', 'lamp' + (on ? ' g' : ' a')), el('span', null, on ? '연결 중' : '연결 끊김 · 나중에 확인'));
     $('dockLamp').className = 'lamp' + (on ? ' g' : ' a');
   }
   // 아래 대화줄 : 입력칸을 누르면 기록이 위로 펼쳐지고, 바깥을 누르면 접힘. 접혀 있을 때 온 답은 '새 답 n'
   let seenReplies = -1;
   const replyCount = () => chatMsgs.filter((m) => m.from === 'claude').length;
   const dockOpen = () => !$('dockPanel').hidden;
-  function paintNew() { const n = seenReplies < 0 ? 0 : replyCount() - seenReplies; $('dockNew').hidden = n <= 0; $('dockNew').textContent = '새 답 ' + n; }
+  function paintNew() { const n = seenReplies < 0 ? 0 : replyCount() - seenReplies; $('dockNew').hidden = n <= 0; $('dockNew').textContent = '새 글 ' + n; }
   function openDock() { if (dockOpen()) return; $('dockPanel').hidden = false; seenReplies = replyCount(); paintNew(); const b = $('msgs'); b.scrollTop = b.scrollHeight; }
   function closeDock() { $('dockPanel').hidden = true; }
   function growChat() { const x = $('chatText'); x.style.height = 'auto'; x.style.height = Math.min(Math.max(x.scrollHeight, 42), 140) + 'px'; x.style.overflowY = x.scrollHeight > 140 ? 'auto' : 'hidden'; }
@@ -649,18 +660,19 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     const box = $('msgs');
     const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
     box.replaceChildren();
-    if (!chatMsgs.length) box.append(el('div', 'msg sys', '여기서 바로 물어보거나 알려줘.'));
+    if (!chatMsgs.length) box.append(el('div', 'msg sys', '기록 없음'));
     for (const m of chatMsgs) {
       const cls = m.from === 'claude' ? 'claude' : m.from === 'me' ? 'me' : 'sys';
       const d = el('div', 'msg ' + cls);
       if (m.img) d.append(attImg(String(m.img)));
+      if (m.file && m.file.id) d.append(attFile(m.file));
       d.append(document.createTextNode(m.text || ''));
       if (cls !== 'sys') d.append(el('span', 'at', stamp(m.at).split(' ')[1] || ''));
       box.append(d);
     }
     const replied = chatMsgs.some((m) => m.from === 'claude' && Date.parse(m.at) > waitingSince - 2000);
     const waiting = waitingSince && !replied && Date.now() - waitingSince < 300000;
-    if (waiting) box.append(el('div', 'typing', alive() ? '답 쓰는 중…' : '꺼져 있어 · 켜지면 읽어'));
+    if (waiting) box.append(el('div', 'typing', alive() ? '확인 중…' : '연결 끊김 · 연결되면 확인'));
     if (atBottom || waiting) box.scrollTop = box.scrollHeight;
     if (dockOpen()) seenReplies = replyCount();
     paintNew();
@@ -715,6 +727,46 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     loadImg(imgId).then((u) => { if (u) im.src = u; else im.alt = '사진을 못 불러왔어'; });
     return im;
   }
+  // 파일 : 60만 바이트씩 잘라 암호화 → fil_<id>_<번호> 문서들(문서 한도 1MB) + 대화 글에 file {id,name,size,type,n}. 사진(image/*)은 위 사진 방식
+  // 판 → PC : 감시 프로그램이 업무판/받은 파일/ 에 저장, PC → 판 : board.py send-file (사용자 10/29 "보드 채팅창으로 파일도 주고받을 수 있게, 메일로 왔다 갔다 할 필요 없이")
+  const PART = 600000, FMAX = 15 * 1024 * 1024;
+  const kb = (n) => n < 1048576 ? Math.max(1, Math.round(n / 1024)) + 'KB' : (n / 1048576).toFixed(1) + 'MB';
+  function attach(file) { if (!file) return; if (file.type.startsWith('image/') && !/gif|svg/.test(file.type)) sendImage(file); else sendFile(file); }
+  async function sendFile(file) {
+    if (!file || !canWrite || !viewDate) return;
+    if (file.size > FMAX) { toast('15MB까지만 돼 · 더 크면 메일로'); return; }
+    try {
+      const id = uid(), u8 = new Uint8Array(await file.arrayBuffer()), n = Math.max(1, Math.ceil(u8.length / PART));
+      for (let i = 0; i < n; i++) { toast('파일 올리는 중… ' + (i + 1) + '/' + n); await ref('fil_' + id + '_' + i).set({ v: await encBytes(u8.subarray(i * PART, (i + 1) * PART)) }); }
+      const v = $('chatText').value.trim(); $('chatText').value = ''; growChat();
+      waitingSince = Date.now();
+      await append('chat_' + viewDate, { id: uid(), from: 'me', text: v, file: { id, name: file.name || '파일', size: file.size, type: file.type || '', n }, at: nowIso() });
+      toast('파일 보냄'); openDock(); renderChat();
+      setTimeout(renderChat, 301000);
+    } catch (e) { toast('파일을 못 올렸어 · 다시 해 줘'); }
+  }
+  async function getFile(f, btn) {
+    const st = btn.querySelector('.af-s'), was = st.textContent;
+    btn.disabled = true; st.textContent = '받는 중…';
+    try {
+      const parts = [];
+      for (let i = 0; i < (f.n || 1); i++) {
+        const s = await ref('fil_' + f.id + '_' + i).get(); const d = s.exists ? s.data() : null;
+        if (!d || typeof d.v !== 'string') throw new Error('missing');
+        parts.push(await decBytes(d.v));
+      }
+      const url = URL.createObjectURL(new Blob(parts, { type: f.type || 'application/octet-stream' }));
+      const a = document.createElement('a'); a.href = url; a.download = f.name || '파일'; document.body.append(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (e) { toast('파일을 못 받았어 · 다시 해 줘'); }
+    st.textContent = was; btn.disabled = false;
+  }
+  function attFile(f) {
+    const b = el('button', 'att-file'); b.type = 'button'; b.title = f.name || '';
+    b.append(el('span', 'af-n', f.name || '파일'), el('span', 'af-s', kb(f.size || 0) + ' · 눌러서 받기'));
+    b.addEventListener('click', () => getFile(f, b));
+    return b;
+  }
   function sendChat() {
     const v = $('chatText').value.trim();
     if (!v || !canWrite || !viewDate) return;
@@ -768,8 +820,11 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   let repIndex = [], repOpen = null, repDoc = null, slideAt = 0, deckMode = 'scroll';
   try { deckMode = localStorage.getItem('mb_deck') === 'one' ? 'one' : 'scroll'; } catch (e) {}
   function setMode(m) { deckMode = m; try { localStorage.setItem('mb_deck', m); } catch (e) {} renderDeck(); }
+  function toTop() { const y = document.querySelector('.top').getBoundingClientRect().bottom + window.scrollY; if (window.scrollY > y) window.scrollTo(0, y); }   // 머리 아래(탭 자리)까지만 올림
   function setTab(tab) {
+    const was = document.body.dataset.tab;
     document.body.dataset.tab = tab;
+    if (was && was !== tab) toTop();   // 내려간 채로 바꾸면 새 페이지 처음부터 보이게 (10/29)
     $('tabDay').setAttribute('aria-selected', String(tab !== 'rep')); $('tabRep').setAttribute('aria-selected', String(tab === 'rep'));
     try { localStorage.setItem('mb_tab', tab); } catch (e) {}
     if (tab === 'rep') renderReports();
@@ -878,7 +933,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     $('board').hidden = !d; $('foot').hidden = !d;
     if (!d) return;
     renderHeader(); renderTasks(); renderUpcoming(); renderMeeting(); renderChat(); paintCState();
-    $('foot').textContent = '올린 시각 ' + (stamp(d.updated) || '—') + ' · 매일 아침 TBM 발송 뒤 채워져 · 체크·메모·대화는 PC와 폰 어디서나 같이 보여';
+    $('foot').textContent = '올린 시각 ' + (stamp(d.updated) || '—') + ' · 매일 아침 TBM 발송 뒤 채워져 · 체크·메모는 PC와 폰 어디서나 같이 보여';
   }
 
   // 로그인 봉투 : 아이디 → 문서 이름, 비밀번호(PBKDF2 31만 회) → 비밀키를 잠근 키 (board.py set-login 이 만듦). 아이디·비밀번호는 어디에도 저장 안 함
@@ -938,7 +993,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     buildTbmForm();
     $('logout').addEventListener('click', logout);
     $('tabDay').addEventListener('click', () => setTab('day'));
-    $('tabRep').addEventListener('click', () => setTab('rep'));
+    $('tabRep').addEventListener('click', () => { if (document.body.dataset.tab === 'rep' && repOpen) { closeReport(); toTop(); } else setTab('rep'); });   // 자료 보다가 '자료' 한 번 더 누르면 목록으로 (사용자 10/29 "자료를 한 번 더 누르면 목록으로 가던가")
     $('deckBack').addEventListener('click', closeReport);
     $('modeScroll').addEventListener('click', () => setMode('scroll'));
     $('modeOne').addEventListener('click', () => setMode('one'));
@@ -959,8 +1014,8 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     $('chatText').addEventListener('focus', openDock);
     $('chatText').addEventListener('input', growChat);
     $('attBtn').addEventListener('click', () => $('chatImg').click());
-    $('chatImg').addEventListener('change', () => { const f = $('chatImg').files[0]; $('chatImg').value = ''; sendImage(f); });
-    $('chatText').addEventListener('paste', (e) => { const f = Array.from((e.clipboardData && e.clipboardData.files) || []).find((x) => x.type.startsWith('image/')); if (f) { e.preventDefault(); sendImage(f); } });   // 캡처 붙여넣기도 사진으로
+    $('chatImg').addEventListener('change', () => { const f = $('chatImg').files[0]; $('chatImg').value = ''; attach(f); });
+    $('chatText').addEventListener('paste', (e) => { const fl = Array.from((e.clipboardData && e.clipboardData.files) || []); const f = fl.find((x) => x.type.startsWith('image/')) || fl[0]; if (f) { e.preventDefault(); attach(f); } });   // 캡처 붙여넣기는 사진, 복사한 파일은 파일로
     $('dockClose').addEventListener('click', () => { closeDock(); $('chatText').blur(); });
     document.addEventListener('pointerdown', (e) => { if (dockOpen() && !$('dock').contains(e.target)) closeDock(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && dockOpen()) { closeDock(); $('chatText').blur(); } });
@@ -987,6 +1042,34 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     subs.status = sub('status', (v) => { statusAt = (v && Date.parse(v.at)) || 0; paintCState(); });
     setInterval(paintCState, 60000);
     watchTbm();
+  })();
+  // 앱(안드로이드 웹뷰)에서만 : 맨 위에서 아래로 당기면 새로고침 (사용자 10/29 "앱에서는 새로고침이 최상단에서 아래로 드래그하면 되게, 운동 앱처럼") — 휴대폰 브라우저는 자체 당겨서 새로고침이 있어서 뺌
+  (function pullToRefresh() {
+    if (!/; wv\)/.test(navigator.userAgent)) return;
+    const ind = $('ptr'), txt = $('ptrText'), TH = 70, MAX = 100;
+    let y0 = 0, on = false, dist = 0;
+    document.addEventListener('touchstart', (e) => {
+      let inner = 0;   // 어디서 시작해도 됨 (사용자 10/29 "어떤 경우든 새로고침돼야지") — 단 메모 기록처럼 안쪽 스크롤 칸이 맨 위가 아니면 그 칸 스크롤이 먼저
+      for (let x = e.target; x && x.nodeType === 1 && x !== document.body; x = x.parentElement) {
+        const oy = getComputedStyle(x).overflowY;
+        if ((oy === 'auto' || oy === 'scroll') && x.scrollHeight > x.clientHeight + 1) { inner = x.scrollTop; break; }
+      }
+      on = window.scrollY <= 0 && inner <= 0;
+      if (on) { y0 = e.touches[0].clientY; dist = 0; }
+    }, { passive: true });
+    document.addEventListener('touchmove', (e) => {
+      if (!on) return;
+      dist = e.touches[0].clientY - y0;
+      if (dist <= 0 || window.scrollY > 0) { ind.style.height = '0px'; ind.classList.remove('ready'); return; }
+      ind.style.height = 'calc(' + Math.min(dist * 0.5, MAX) + 'px + env(safe-area-inset-top, 0px))';
+      const ready = dist >= TH; ind.classList.toggle('ready', ready); txt.textContent = ready ? '놓으면 새로고침' : '당겨서 새로고침';
+    }, { passive: true });
+    document.addEventListener('touchend', () => {
+      if (!on) return; on = false;
+      if (dist >= TH && window.scrollY <= 0) { ind.style.height = 'calc(44px + env(safe-area-inset-top, 0px))'; ind.classList.add('spin'); ind.classList.remove('ready'); txt.textContent = '새로고침 중…'; setTimeout(() => location.reload(), 300); }
+      else { ind.style.transition = 'height .2s'; ind.style.height = '0px'; setTimeout(() => { ind.style.transition = ''; }, 200); }
+      dist = 0;
+    });
   })();
 })();
 </script>
