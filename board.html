@@ -48,11 +48,84 @@ h1 .w{color:var(--muted);font-weight:500}
 .btn.solid{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .btn.solid:hover:not(:disabled){filter:brightness(1.06)}
 
+/* 페이지 탭 : 오늘 업무 | 자료 (사용자 10/29 "대시보드에 페이지 2개, 2페이지에 정리한 자료를 PPT처럼") */
+.tabs{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.seg{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.tab{height:34px;padding:0 14px;border:0;border-radius:9px;background:none;color:var(--ink-2);font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.tab[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.tab-n{font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;background:var(--sunken);color:var(--ink-2)}
+.tab[aria-selected="true"] .tab-n{background:color-mix(in srgb,var(--accent-ink) 16%,transparent);color:var(--accent-ink)}
+.out{margin-left:auto;border:0;background:none;color:var(--muted);font-size:13px;cursor:pointer;padding:6px 4px}
+.out:hover{color:var(--ink)}
+body[data-tab="rep"] #state,body[data-tab="rep"] #board .grid,body[data-tab="rep"] .progress,body[data-tab="rep"] #foot{display:none!important}
+body:not([data-tab="rep"]) #repPage{display:none!important}
+
+/* 자료 : 목록 → 한 장씩 넘겨 보는 슬라이드 */
+.rep-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.rep-card{display:flex;flex-direction:column;gap:6px;text-align:left;padding:16px 18px;border:1px solid var(--line);border-radius:var(--r-card);background:var(--surface);cursor:pointer;min-width:0}
+.rep-card:hover{border-color:color-mix(in srgb,var(--accent) 55%,var(--line))}
+.rep-date{font-size:12px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.rep-t{font-size:16px;font-weight:700;overflow-wrap:anywhere}
+.rep-s{font-size:13px;color:var(--ink-2);overflow-wrap:anywhere}
+.rep-n{font-size:12px;color:var(--muted)}
+.rep-empty{margin:0;padding:18px;border:1px dashed var(--line);border-radius:var(--r-card);color:var(--ink-2);text-align:center}
+.deck{display:flex;flex-direction:column;gap:12px;max-width:1040px;width:100%;margin:0 auto}
+.deck-h{display:flex;align-items:center;gap:12px;min-width:0}
+.deck-t{font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.deck-n{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.slide{display:flex;flex-direction:column;gap:16px;padding:clamp(18px,3.4vw,40px);border:1px solid var(--line);border-radius:16px;background:var(--surface);min-height:340px;overflow:auto;touch-action:pan-y;user-select:none}
+@media (min-width:880px){.slide{aspect-ratio:16/9;min-height:0}}
+.deck-nav{display:flex;align-items:center;justify-content:center;gap:12px}
+.tab[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.mode .tab{height:30px;padding:0 12px;font-size:13px}
+.slides{display:flex;flex-direction:column;gap:16px}
+.s-pg{align-self:flex-end;margin-top:auto;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.dots{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.dot{width:9px;height:9px;border-radius:50%;border:0;padding:0;background:var(--line);cursor:pointer}
+.dot.on{background:var(--accent)}
+.s-kicker{font-size:13px;font-weight:700;letter-spacing:.06em;color:var(--accent)}
+.s-title{margin:0;font-size:clamp(20px,2.6vw,32px);font-weight:800;letter-spacing:-.02em;line-height:1.25;text-wrap:balance}
+.s-sub{font-size:clamp(14px,1.4vw,17px);color:var(--ink-2)}
+.s-big{margin-top:auto;font-size:clamp(36px,6vw,72px);font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--accent)}
+.s-note{margin-top:auto;font-size:12.5px;color:var(--muted)}
+.s-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.s-stat{padding:14px 16px;border-radius:12px;background:var(--bg);border:1px solid var(--line);display:flex;flex-direction:column;gap:4px;min-width:0}
+.s-stat .k{font-size:12.5px;color:var(--ink-2)}
+.s-stat .v{font-size:clamp(22px,2.6vw,32px);font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.s-stat .u{font-size:13px;font-weight:600;color:var(--ink-2);margin-left:4px}
+.s-stat .d{font-size:12.5px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.s-legend{display:flex;gap:16px;font-size:12.5px;color:var(--ink-2)}
+.s-legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px;background:var(--muted)}
+.s-legend span.b::before{background:var(--accent)}
+.s-bars{display:flex;flex-direction:column;gap:12px}
+.s-group{display:grid;grid-template-columns:minmax(84px,150px) minmax(0,1fr);gap:4px 12px;align-items:center}
+.s-group .g{font-size:13.5px;font-weight:600;color:var(--ink-2);grid-row:span 2}
+.s-bar{display:flex;align-items:center;gap:8px;min-width:0}
+.s-bar i{flex:none;display:block;height:14px;border-radius:4px;background:var(--muted)}
+.s-bar.b i{background:var(--accent)}
+.s-bar span{font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--ink-2);white-space:nowrap}
+.s-tw{overflow-x:auto}
+.s-table{width:100%;border-collapse:collapse;font-size:clamp(13px,1.3vw,15px)}
+.s-table th,.s-table td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.s-table th:first-child,.s-table td:first-child{text-align:left}
+.s-table th{font-size:12.5px;color:var(--ink-2);font-weight:600}
+.s-list{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:10px;font-size:clamp(14px,1.5vw,18px);line-height:1.5}
+
+/* 로그인 (사용자 10/29 "로그인해야 되게, 아이디 비밀번호" → "자동 로그인 말고 아이디 저장만") */
+.auth{max-width:380px;width:100%;margin:6vh auto 0;padding:26px 24px;border:1px solid var(--line);border-radius:var(--r-card);background:var(--surface);display:flex;flex-direction:column;gap:14px}
+.auth h2{margin:0;font-size:20px;font-weight:700}
+.auth p{margin:0;font-size:13.5px;color:var(--ink-2)}
+.auth label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--ink-2)}
+.auth input[type=text],.auth input[type=password]{height:42px;padding:0 12px;border:1px solid var(--line);border-radius:var(--r-ctl);background:var(--sunken);font-size:15px}
+.auth .keep{flex-direction:row;align-items:center;gap:8px;font-weight:500}
+.auth .keep input{width:18px;height:18px;margin:0;accent-color:var(--accent)}
+.auth .err{color:var(--red);font-size:13px;min-height:1.2em}
+.auth .btn{height:42px}
+
 /* 카드 */
-.grid{display:grid;grid-template-columns:minmax(0,1fr);grid-template-areas:"tasks" "sched" "side";gap:20px;align-items:start}
-.c-tasks{grid-area:tasks}.c-sched{grid-area:sched}.c-side{grid-area:side}
-@media (min-width:880px){.grid{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);grid-template-areas:"tasks sched" "tasks side";grid-template-rows:auto 1fr}}
-@media (min-width:1260px){.grid{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) minmax(0,.95fr);grid-template-areas:"tasks sched side";grid-template-rows:auto}}
+.grid{display:grid;grid-template-columns:minmax(0,1fr);grid-template-areas:"tasks" "sched";gap:20px;align-items:start}
+.c-tasks{grid-area:tasks}.c-sched{grid-area:sched}
+@media (min-width:880px){.grid{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);grid-template-areas:"tasks sched"}}   /* 두 칸만 (사용자 10/29) */
 .col{display:flex;flex-direction:column;gap:20px;min-width:0}
 .sec{display:flex;flex-direction:column;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);padding:16px 18px 8px}
 .sec-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
@@ -78,6 +151,13 @@ h1 .w{color:var(--muted);font-weight:500}
 .chip.must{color:var(--red);background:color-mix(in srgb,var(--red) 16%,transparent)}
 .dchip{display:inline-block;font-size:11.5px;font-weight:700;padding:1px 8px;margin-right:6px;border-radius:999px;background:var(--sunken);color:var(--ink-2);vertical-align:1px;font-variant-numeric:tabular-nums}
 .chip.reg{color:var(--ink-2);background:var(--sunken);border:1px solid var(--line)}
+/* 협력사 업무지시 : 이행 / 불이행 둘 중 하나 (사용자 10/29) */
+.judge{display:flex;flex-direction:column;gap:7px;flex:none;padding-top:1px}
+.jd{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--ink-2);cursor:pointer;white-space:nowrap}
+.row .jd input[type=checkbox]{margin:0}
+.row .jd.ng input[type=checkbox]:checked{border-color:var(--red);background-color:var(--red)}
+.item.ok .t{color:var(--muted);text-decoration:line-through;text-decoration-thickness:1px}
+.item.ng .jd.ng{color:var(--red)}
 
 .memo-in{width:100%;height:32px;margin-top:4px;padding:0 10px;border:1px solid transparent;border-radius:var(--r-ctl);background:var(--sunken);font-size:13.5px;color:var(--ink)}
 .memo-in:hover{border-color:var(--line)}
@@ -106,13 +186,6 @@ h1 .w{color:var(--muted);font-weight:500}
 .say li{padding:10px 12px;background:var(--sunken);border-radius:10px;font-size:14px;overflow-wrap:anywhere}
 .say li.empty{background:none;padding:10px 0 2px}
 
-/* TBM 표 */
-.tbl{overflow-x:auto;margin-bottom:10px;border:1px solid var(--line);border-radius:10px}
-table{width:100%;border-collapse:collapse;font-size:14px}
-th,td{padding:9px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
-tbody tr:last-child td{border-bottom:0}
-th{font-size:12.5px;font-weight:600;color:var(--ink-2);background:var(--sunken)}
-td.place{width:7.5em;color:var(--ink-2)}
 
 /* 입력 */
 .inputs{gap:20px}
@@ -166,6 +239,10 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
 .chat-form{display:flex;gap:8px;align-items:flex-end}
 .chat-form .lamp{align-self:center;margin:0 4px}
 .chat-form textarea{flex:1;height:42px;min-height:42px;max-height:140px;resize:none;overflow-y:hidden;padding:10px 12px;border-radius:12px;background:var(--surface)}
+/* 사진 붙이기 (사용자 10/29) */
+.att-btn{flex:none;height:42px;padding:0 12px}
+.msg .att{display:block;max-width:220px;max-height:220px;min-width:60px;min-height:60px;margin:2px 0 4px;border-radius:10px;background:var(--sunken);cursor:zoom-in}
+.msg .att.big{max-width:100%;max-height:none;cursor:zoom-out}
 
 .state{margin:24px 0;padding:18px;border:1px dashed var(--line);border-radius:var(--r-card);color:var(--ink-2);text-align:center;background:var(--surface)}
 .foot{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
@@ -190,7 +267,31 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     </div>
   </header>
 
+  <nav class="tabs" id="tabs" hidden>
+    <div class="seg" role="tablist" aria-label="페이지"><button class="tab" role="tab" id="tabDay" type="button" aria-selected="true">오늘 업무</button><button class="tab" role="tab" id="tabRep" type="button" aria-selected="false">자료<span class="tab-n" id="repCount" hidden></span></button></div>
+    <button class="out" id="logout" type="button">로그아웃</button>
+  </nav>
+
+  <form class="auth" id="auth" hidden>
+    <h2 id="authTitle">로그인</h2>
+    <label>아이디<input type="text" id="authId" autocomplete="username" autocapitalize="off" spellcheck="false" maxlength="40"></label>
+    <label>비밀번호<input type="password" id="authPw" autocomplete="current-password" maxlength="100"></label>
+    <label class="keep"><input type="checkbox" id="authKeep">아이디 저장</label>
+    <div class="err" id="authErr" role="alert"></div>
+    <button class="btn solid" type="submit" id="authGo">로그인</button>
+  </form>
+
   <p class="state" id="state">업무판을 불러오는 중…</p>
+
+  <section class="reports" id="repPage">
+    <div class="rep-list" id="repList"></div>
+    <div class="deck" id="deck" hidden>
+      <div class="deck-h"><button class="btn" id="deckBack" type="button">‹ 목록</button><div class="deck-t" id="deckTitle"></div><span class="deck-n" id="deckNum"></span><div class="seg mode" role="group" aria-label="보는 방식"><button class="tab" id="modeScroll" type="button" aria-pressed="true">쭉 보기</button><button class="tab" id="modeOne" type="button" aria-pressed="false">한 장씩</button></div></div>
+      <div class="slides" id="slides"></div>
+      <div class="slide" id="slide" hidden></div>
+      <div class="deck-nav" id="deckNav" hidden><button class="btn" id="prevSlide" type="button" aria-label="이전 장">‹</button><div class="dots" id="dots"></div><button class="btn" id="nextSlide" type="button" aria-label="다음 장">›</button></div>
+    </div>
+  </section>
 
   <div id="board" hidden>
     <div class="grid">
@@ -198,19 +299,13 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
         <section class="sec"><div class="sec-h"><h2 class="plate">오늘 업무</h2></div><ul class="list tasks" id="todayList"></ul></section>
         <section class="sec"><div class="sec-h"><h2 class="plate">이번 주 예정 업무</h2></div><ul class="list tasks" id="weekList"></ul></section>
         <section class="sec"><div class="sec-h"><h2 class="plate">해야 될 업무</h2></div><ul class="list tasks" id="waiting"></ul></section>
+        <section class="sec"><div class="sec-h"><h2 class="plate">협력사 업무지시</h2></div><ul class="list tasks" id="orders"></ul></section>
       </div>
 
-      <div class="col c-sched">
+      <div class="col inputs c-sched">
         <section class="sec"><div class="sec-h"><h2 class="plate">진행 중 일정</h2></div><ol class="timeline" id="ongoing"></ol></section>
         <section class="sec"><div class="sec-h"><h2 class="plate">다가오는 일정</h2></div><div class="sub">일정</div><ol class="timeline" id="upcoming"></ol><div class="sub">정기 업무</div><ol class="timeline" id="upRegular"></ol></section>
         <section class="sec"><div class="sec-h"><h2 class="plate">회의 때 말할 것</h2></div><ul class="say" id="meeting"></ul></section>
-        <section class="sec">
-          <div class="sec-h"><h2 class="plate">TBM 잠재위험요인</h2><span class="aside" id="tbmSent"></span></div>
-          <div class="tbl"><table><thead><tr><th>작업 중 잠재위험요인</th><th>장소</th></tr></thead><tbody id="tbmRows"></tbody></table></div>
-        </section>
-      </div>
-
-      <div class="col inputs c-side">
         <section class="sec">
           <div class="sec-h"><h2 class="plate">내일 TBM</h2><span class="aside"><label for="tbmDate" class="k">날짜</label><input type="date" id="tbmDate"></span></div>
           <form class="tbm-form" id="tbmForm" autocomplete="off">
@@ -233,6 +328,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
           <span class="lamp" id="dockLamp"></span>
           <textarea id="chatText" rows="1" maxlength="2000" placeholder="물어보거나 알려줄 거 · Enter 보내기" aria-label="보낼 말"></textarea>
           <span class="dock-new" id="dockNew" hidden>새 답</span>
+          <button class="btn att-btn" type="button" id="attBtn" aria-label="사진 붙이기">사진</button><input type="file" id="chatImg" accept="image/*" hidden>
           <button class="btn solid" type="submit">보내기</button>
         </form>
       </div>
@@ -267,30 +363,33 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   const arr = (v) => (Array.isArray(v) ? v : []);
   const nowIso = () => new Date().toISOString();
 
-  // 비밀키 : 주소 # 뒤, 한 번 열면 이 브라우저가 기억
+  // 로그인 (사용자 10/29 "로그인해야 되게, 아이디 비밀번호", "자동 로그인 말고 아이디 저장만") : 로그인은 그 창(세션) 동안만, '아이디 저장'이면 아이디만 기억. 비밀키는 아이디·비밀번호로 잠근 봉투 문서(bd_login_<아이디 해시>)에서 꺼냄.
+  // 아이디 등록은 판에서 못 함 — 사용자가 PC에서 board.py set-login 으로만 ("아무나 생성하니까 나만 여기서 등록하는 게 맞아"). 주소 # 뒤 키는 안 씀
   let SECRET = '';
-  try { SECRET = decodeURIComponent(location.hash.slice(1)).trim(); } catch (e) {}
-  try { if (SECRET) localStorage.setItem('mb_secret', SECRET); else SECRET = localStorage.getItem('mb_secret') || ''; } catch (e) {}
-  window.addEventListener('hashchange', () => location.reload());   // 주소 # 뒤를 바꿔 넣으면 다시 읽음
+  if (location.hash) history.replaceState(null, '', location.pathname + location.search);   // 예전 주소의 키가 주소창에 안 남게
+  try { localStorage.removeItem('mb_secret'); localStorage.removeItem('mb_auth'); SECRET = sessionStorage.getItem('mb_auth') || ''; } catch (e) {}
 
   // 암호화 : PBKDF2-SHA256 15만 회 → AES-GCM, 저장값 = base64(iv 12바이트 + 암호문)
   let KEY = null, PFX = '', fs = null;
   const te = new TextEncoder(), td = new TextDecoder();
   const toB64 = (u8) => { let s = ''; for (let i = 0; i < u8.length; i += 8192) s += String.fromCharCode.apply(null, u8.subarray(i, i + 8192)); return btoa(s); };
   const fromB64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
-  async function initCrypto() {
-    const h = new Uint8Array(await crypto.subtle.digest('SHA-256', te.encode(SECRET)));
-    PFX = 'bd_' + Array.from(h, (b) => b.toString(16).padStart(2, '0')).join('').slice(0, 16) + '_';
-    const base = await crypto.subtle.importKey('raw', te.encode(SECRET), 'PBKDF2', false, ['deriveKey']);
-    KEY = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: te.encode('meritz-board-v1'), iterations: 150000, hash: 'SHA-256' },
+  const hex = (u8) => Array.from(u8, (b) => b.toString(16).padStart(2, '0')).join('');
+  async function keysOf(secret) {
+    const pfx = 'bd_' + hex(new Uint8Array(await crypto.subtle.digest('SHA-256', te.encode(secret)))).slice(0, 16) + '_';
+    const base = await crypto.subtle.importKey('raw', te.encode(secret), 'PBKDF2', false, ['deriveKey']);
+    const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: te.encode('meritz-board-v1'), iterations: 150000, hash: 'SHA-256' },
       base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+    return { pfx, key };
   }
-  async function enc(obj) {
+  async function initCrypto() { ({ pfx: PFX, key: KEY } = await keysOf(SECRET)); }
+  async function encWith(key, obj) {
     const iv = crypto.getRandomValues(new Uint8Array(12));
-    const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, KEY, te.encode(JSON.stringify(obj))));
+    const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, te.encode(JSON.stringify(obj))));
     const out = new Uint8Array(12 + ct.length); out.set(iv); out.set(ct, 12);
     return toB64(out);
   }
+  async function enc(obj) { return encWith(KEY, obj); }
   async function dec(s) {
     try { const u = fromB64(s); return JSON.parse(td.decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: u.subarray(0, 12) }, KEY, u.subarray(12)))); }
     catch (e) { return undefined; }
@@ -317,7 +416,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
 
   let canWrite = true;
   let dates = [], dayDoc = null, viewDate = null;
-  let checks = { done: {}, notes: {} }, chatMsgs = [], cnotes = {};
+  let checks = { done: {}, notes: {}, result: {} }, chatMsgs = [], cnotes = {};
   let tbmDate = nextWorkday(kstToday()), tbmDirty = false, tbmDoc = null;
   let statusAt = 0, waitingSince = 0;
   const subs = {};
@@ -364,6 +463,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     fillList('todayList', todayItems(d));
     fillList('weekList', weekItems(d));
     fillList('waiting', d.waiting);
+    fillOrders(d.orders);
     renderProgress(); renderUpcoming();
   }
   function fillList(id, items) {
@@ -406,9 +506,9 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     inp.addEventListener('blur', () => setNote(id, inp.value.trim()));
     return inp;
   }
-  function pushChecks() { save('chk_' + viewDate, { date: viewDate, done: { ...checks.done }, notes: { ...checks.notes }, at: nowIso() }); }
+  function pushChecks() { save('chk_' + viewDate, { date: viewDate, done: { ...checks.done }, notes: { ...checks.notes }, result: { ...checks.result }, at: nowIso() }); }
   function itemText(id) {
-    for (const k of ['alerts', 'today', 'week', 'waiting', 'regular']) { const f = arr(dayDoc && dayDoc[k]).find((x) => String(x.id) === id); if (f) return f.text || id; }
+    for (const k of ['alerts', 'today', 'week', 'waiting', 'regular', 'orders']) { const f = arr(dayDoc && dayDoc[k]).find((x) => String(x.id) === id); if (f) return f.text || id; }
     return id;
   }
   function setDone(id, on) {
@@ -421,6 +521,42 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     addEvent('메모 · ' + itemText(id) + ' → ' + (v || '지움'), { kind: 'memo', item: id });
     if (v) checks.notes[id] = v; else delete checks.notes[id];
     pushChecks();
+  }
+  // 협력사 업무지시 : 지시마다 이행 / 불이행 체크 (둘 중 하나, 사용자 10/29) — 지시 글은 내가 넣음
+  function fillOrders(items) {
+    const ul = $('orders'); ul.replaceChildren();
+    const a = arr(items);
+    if (!a.length) { ul.append(el('li', 'empty', '없음')); return; }
+    for (const it of a) ul.append(orderRow(it));
+  }
+  function orderRow(it) {
+    const id = String(it.id || '');
+    const r = checks.result[id] || '';
+    const li = el('li', 'item' + (r ? ' ' + r : ''));
+    const row = el('div', 'row');
+    const body = el('div', 'body');
+    const lab = el('div', 't', it.text || '');
+    const tag = [isDate(it.date) ? md(it.date) : '', it.who || ''].filter(Boolean).join(' · ');
+    if (tag) lab.prepend(el('span', 'dchip', tag));
+    body.append(lab);
+    if (it.note) body.append(el('div', 'n', it.note));
+    if (id) body.append(memoLine(id));
+    if (id && cnotes[id]) { const c = el('div', 'cl'); c.append(el('span', 'memo-k', '답'), el('span', null, cnotes[id])); body.append(c); }
+    const judge = el('div', 'judge');
+    for (const [v, name] of [['ok', '이행'], ['ng', '불이행']]) {
+      const l = el('label', 'jd ' + v);
+      const box = document.createElement('input');
+      box.type = 'checkbox'; box.checked = r === v; box.disabled = !canWrite || !id;
+      box.addEventListener('change', () => setResult(id, box.checked ? v : ''));
+      l.append(box, document.createTextNode(name)); judge.append(l);
+    }
+    row.append(body, judge); li.append(row);
+    return li;
+  }
+  function setResult(id, v) {
+    addEvent((v === 'ok' ? '이행 · ' : v === 'ng' ? '불이행 · ' : '↺ ') + itemText(id), { kind: 'order', item: id, result: v });
+    if (v) checks.result[id] = v; else delete checks.result[id];
+    pushChecks(); renderTasks();
   }
   function renderProgress() {
     const d = dayDoc; if (!d) return;
@@ -476,14 +612,6 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     if (!a.length) { ul.append(el('li', 'empty', '없음')); return; }
     for (const s of a) ul.append(el('li', null, s));
   }
-  function renderTbm() {
-    const d = dayDoc; const tb = $('tbmRows'); tb.replaceChildren();
-    const r = arr(d.tbm && d.tbm.risks);
-    $('tbmSent').replaceChildren();
-    if (d.tbm && d.tbm.sent) $('tbmSent').append(el('span', 'lamp g'), document.createTextNode(d.tbm.sent + ' 발송'));
-    if (!r.length) { const tr = el('tr'); const td2 = el('td', null, '아직 없음'); td2.colSpan = 2; tr.append(td2); tb.append(tr); return; }
-    for (const x of r) { const tr = el('tr'); tr.append(el('td', null, x.text || ''), el('td', 'place', x.place || '')); tb.append(tr); }
-  }
 
   // 대화 (PC 쪽 감시 프로그램이 15초마다 읽고, 5분마다 연결 신호를 남김)
   function alive() { return statusAt && Date.now() - statusAt < 12 * 60e3; }
@@ -508,6 +636,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     for (const m of chatMsgs) {
       const cls = m.from === 'claude' ? 'claude' : m.from === 'me' ? 'me' : 'sys';
       const d = el('div', 'msg ' + cls);
+      if (m.img) d.append(attImg(String(m.img)));
       d.append(document.createTextNode(m.text || ''));
       if (cls !== 'sys') d.append(el('span', 'at', stamp(m.at).split(' ')[1] || ''));
       box.append(d);
@@ -518,6 +647,56 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     if (atBottom || waiting) box.scrollTop = box.scrollHeight;
     if (dockOpen()) seenReplies = replyCount();
     paintNew();
+  }
+  // 사진 : 긴 변 1600px JPEG로 줄여 암호화 → img_<id> 문서 하나(문서 한도 1MB) → 대화 글에 img 로 붙임. PC 감시 프로그램이 풀어서 파일로 저장 (사용자 10/29)
+  async function encBytes(u8) {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, KEY, u8));
+    const out = new Uint8Array(12 + ct.length); out.set(iv); out.set(ct, 12);
+    return toB64(out);
+  }
+  async function decBytes(s) { const u = fromB64(s); return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: u.subarray(0, 12) }, KEY, u.subarray(12))); }
+  async function shrink(file) {
+    const url = URL.createObjectURL(file);
+    try {
+      const img = new Image(); img.src = url; await img.decode();
+      for (const [side, q] of [[1600, 0.82], [1600, 0.7], [1280, 0.7], [1024, 0.65]]) {
+        const k = Math.min(1, side / Math.max(img.naturalWidth, img.naturalHeight));
+        const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        const b = await new Promise((res) => c.toBlob(res, 'image/jpeg', q));
+        if (b && b.size < 560000) return new Uint8Array(await b.arrayBuffer());
+      }
+      throw new Error('too big');
+    } finally { URL.revokeObjectURL(url); }
+  }
+  async function sendImage(file) {
+    if (!file || !canWrite || !viewDate) return;
+    toast('사진 올리는 중…');
+    try {
+      const imgId = uid();
+      await ref('img_' + imgId).set({ v: await encBytes(await shrink(file)) });
+      const v = $('chatText').value.trim(); $('chatText').value = ''; growChat();
+      waitingSince = Date.now();
+      await append('chat_' + viewDate, { id: uid(), from: 'me', text: v, img: imgId, at: nowIso() });
+      toast('사진 보냄'); openDock(); renderChat();
+      setTimeout(renderChat, 301000);
+    } catch (e) { toast('사진을 못 올렸어 · 다시 해 줘'); }
+  }
+  const imgUrls = new Map();   // 사진 id → 풀어 둔 주소 (한 번만 받음)
+  function loadImg(imgId) {
+    if (!imgUrls.has(imgId)) imgUrls.set(imgId, ref('img_' + imgId).get().then(async (s) => {
+      const d = s.exists ? s.data() : null;
+      return d && typeof d.v === 'string' ? URL.createObjectURL(new Blob([await decBytes(d.v)], { type: 'image/jpeg' })) : '';
+    }).catch(() => { imgUrls.delete(imgId); return ''; }));
+    return imgUrls.get(imgId);
+  }
+  function attImg(imgId) {
+    const im = el('img', 'att'); im.alt = '붙인 사진';
+    im.addEventListener('click', () => im.classList.toggle('big'));
+    im.addEventListener('load', () => { const b = $('msgs'); if (b.scrollHeight - b.scrollTop - b.clientHeight < 260) b.scrollTop = b.scrollHeight; });
+    loadImg(imgId).then((u) => { if (u) im.src = u; else im.alt = '사진을 못 불러왔어'; });
+    return im;
   }
   function sendChat() {
     const v = $('chatText').value.trim();
@@ -568,15 +747,102 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     subs.tbm = sub('tbm_' + date, (v) => { if (date !== tbmDate || pending.has('tbm_' + date)) return; tbmDoc = v || null; showTbm(); });
   }
 
+  // 페이지 2 : 자료 (사용자 10/29 "대시보드에 페이지 2개, 2페이지에 니가 정리한 자료를 PPT로") — rep_index 목록, rep_<id> = {title, date, slides:[…]}
+  let repIndex = [], repOpen = null, repDoc = null, slideAt = 0, deckMode = 'scroll';
+  try { deckMode = localStorage.getItem('mb_deck') === 'one' ? 'one' : 'scroll'; } catch (e) {}
+  function setMode(m) { deckMode = m; try { localStorage.setItem('mb_deck', m); } catch (e) {} renderDeck(); }
+  function setTab(tab) {
+    document.body.dataset.tab = tab;
+    $('tabDay').setAttribute('aria-selected', String(tab !== 'rep')); $('tabRep').setAttribute('aria-selected', String(tab === 'rep'));
+    try { localStorage.setItem('mb_tab', tab); } catch (e) {}
+    if (tab === 'rep') renderReports();
+  }
+  function renderReports() {
+    if (repOpen) { renderDeck(); return; }
+    $('deck').hidden = true;
+    const box = $('repList'); box.hidden = false; box.replaceChildren();
+    if (!repIndex.length) { box.append(el('p', 'rep-empty', '아직 올린 자료가 없어. 정리해 달라고 하면 여기에 올려둘게.')); return; }
+    for (const r of repIndex) {
+      const b = el('button', 'rep-card'); b.type = 'button';
+      b.append(el('span', 'rep-date', isDate(r.date) ? md(r.date) + ' (' + dow(r.date) + ')' : ''), el('span', 'rep-t', r.title || ''));
+      if (r.sub) b.append(el('span', 'rep-s', r.sub));
+      if (r.slides) b.append(el('span', 'rep-n', r.slides + '장'));
+      b.addEventListener('click', () => openReport(String(r.id)));
+      box.append(b);
+    }
+  }
+  function openReport(id) {
+    repOpen = id; repDoc = null; slideAt = 0;
+    if (subs.rep) subs.rep();
+    subs.rep = sub('rep_' + id, (v) => { if (repOpen !== id) return; repDoc = v || null; renderDeck(); });
+    renderDeck();
+  }
+  function closeReport() { repOpen = null; repDoc = null; if (subs.rep) { subs.rep(); subs.rep = null; } renderReports(); }
+  function renderDeck() {
+    $('repList').hidden = true; $('deck').hidden = false;
+    const sl = arr(repDoc && repDoc.slides);
+    slideAt = Math.max(0, Math.min(slideAt, sl.length - 1));
+    $('deckTitle').textContent = (repDoc && repDoc.title) || '불러오는 중…';
+    const one = deckMode === 'one';
+    $('modeScroll').setAttribute('aria-pressed', String(!one)); $('modeOne').setAttribute('aria-pressed', String(one));
+    $('slides').hidden = one; $('slide').hidden = !one; $('deckNav').hidden = !one;
+    if (!one) {   // 쭉 보기 : 모든 장을 위에서 아래로
+      $('deckNum').textContent = sl.length ? sl.length + '장' : '';
+      $('slides').replaceChildren(...sl.map((x, i) => { const s = el('div', 'slide'); s.append(...slideBody(x), el('div', 's-pg', (i + 1) + ' / ' + sl.length)); return s; }));
+      return;
+    }
+    $('deckNum').textContent = sl.length ? (slideAt + 1) + ' / ' + sl.length : '';
+    $('prevSlide').disabled = slideAt <= 0; $('nextSlide').disabled = slideAt >= sl.length - 1;
+    const dots = $('dots'); dots.replaceChildren();
+    sl.forEach((_, i) => { const b = el('button', 'dot' + (i === slideAt ? ' on' : '')); b.type = 'button'; b.setAttribute('aria-label', (i + 1) + '장'); b.addEventListener('click', () => { slideAt = i; renderDeck(); }); dots.append(b); });
+    $('slide').replaceChildren(...(sl.length ? slideBody(sl[slideAt]) : []));
+  }
+  function slideBody(x) {   // 장 종류 : title · stats · bars · table · bullets
+    const out = [], t = x.type || 'bullets';
+    if (x.kicker) out.push(el('div', 's-kicker', x.kicker));
+    if (x.title) out.push(el(t === 'title' ? 'h2' : 'h3', 's-title', x.title));
+    if (x.sub) out.push(el('div', 's-sub', x.sub));
+    if (t === 'title' && x.big) out.push(el('div', 's-big', x.big));
+    if (t === 'stats') {
+      const g = el('div', 's-stats');
+      for (const s of arr(x.items)) {
+        const c = el('div', 's-stat'); const v = el('div', 'v', s.value || '');
+        if (s.unit) v.append(el('span', 'u', s.unit));
+        c.append(el('div', 'k', s.label || ''), v);
+        if (s.delta) c.append(el('div', 'd', s.delta));
+        g.append(c);
+      }
+      out.push(g);
+    } else if (t === 'bars') {
+      const lg = el('div', 's-legend'); arr(x.legend).forEach((n, i) => lg.append(el('span', i ? 'b' : null, n))); out.push(lg);
+      const box = el('div', 's-bars'), max = Math.max(1, ...arr(x.groups).flatMap((g) => arr(g.values).map(Number)));
+      for (const g of arr(x.groups)) {
+        const row = el('div', 's-group'); row.append(el('div', 'g', g.label || ''));
+        arr(g.values).forEach((v, i) => { const b = el('div', 's-bar' + (i ? ' b' : '')), bar = el('i'); bar.style.width = (Number(v) / max * 80).toFixed(1) + '%'; b.append(bar, el('span', null, Number(v).toLocaleString('ko-KR') + (x.unit ? ' ' + x.unit : ''))); row.append(b); });
+        box.append(row);
+      }
+      out.push(box);
+    } else if (t === 'table') {
+      const w = el('div', 's-tw'), tb = el('table', 's-table'), hr = el('tr'), body = el('tbody');
+      arr(x.head).forEach((h) => hr.append(el('th', null, h)));
+      arr(x.rows).forEach((r) => { const tr = el('tr'); arr(r).forEach((c) => tr.append(el('td', null, String(c)))); body.append(tr); });
+      const th = el('thead'); th.append(hr); tb.append(th, body); w.append(tb); out.push(w);
+    } else if (t === 'bullets') {
+      const ul = el('ul', 's-list'); arr(x.items).forEach((s) => ul.append(el('li', null, s))); out.push(ul);
+    }
+    if (x.note) out.push(el('div', 's-note', x.note));
+    return out;
+  }
+
   // 날짜 바꾸기 · 구독
   function watchDay() {
     for (const k of ['day', 'chk', 'chat', 'cl']) if (subs[k]) subs[k]();
-    dayDoc = null; checks = { done: {}, notes: {} }; chatMsgs = []; cnotes = {}; seenReplies = -1;
+    dayDoc = null; checks = { done: {}, notes: {}, result: {} }; chatMsgs = []; cnotes = {}; seenReplies = -1;
     const date = viewDate;
     subs.day = sub('days_' + date, (v) => { if (date !== viewDate) return; dayDoc = v && isDate(v.date) ? v : null; renderAll(); showTbm(); });
     subs.chk = sub('chk_' + date, (v) => {
       if (date !== viewDate || pending.has('chk_' + date)) return;
-      checks = { done: { ...((v && v.done) || {}) }, notes: { ...((v && v.notes) || {}) } };
+      checks = { done: { ...((v && v.done) || {}) }, notes: { ...((v && v.notes) || {}) }, result: { ...((v && v.result) || {}) } };
       renderTasks();
     });
     subs.chat = subList('chat_' + date, (l) => { if (date !== viewDate) return; chatMsgs = l.slice().sort((a, b) => String(a.at).localeCompare(String(b.at))); if (seenReplies < 0) seenReplies = replyCount(); renderChat(); });   // 처음 읽은 답은 '새 답'으로 안 셈
@@ -590,25 +856,90 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     const d = dayDoc;
     $('board').hidden = !d; $('foot').hidden = !d;
     if (!d) return;
-    renderHeader(); renderTasks(); renderUpcoming(); renderMeeting(); renderTbm(); renderChat(); paintCState();
+    renderHeader(); renderTasks(); renderUpcoming(); renderMeeting(); renderChat(); paintCState();
     $('foot').textContent = '올린 시각 ' + (stamp(d.updated) || '—') + ' · 매일 아침 TBM 발송 뒤 채워져 · 체크·메모·대화는 PC와 폰 어디서나 같이 보여';
+  }
+
+  // 로그인 봉투 : 아이디 → 문서 이름, 비밀번호(PBKDF2 31만 회) → 비밀키를 잠근 키 (board.py set-login 이 만듦). 아이디·비밀번호는 어디에도 저장 안 함
+  async function loginDoc(id) { return 'bd_login_' + hex(new Uint8Array(await crypto.subtle.digest('SHA-256', te.encode('meritz-board-login|' + id.trim().toLowerCase())))).slice(0, 24); }
+  async function pwKey(pw, salt) {
+    const base = await crypto.subtle.importKey('raw', te.encode(pw), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 310000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  }
+  async function openSecret(id, pw) {
+    const s = await fs.collection('ppld').doc(await loginDoc(id)).get();
+    const d = s.exists ? s.data() : null;
+    if (!d || typeof d.v !== 'string') return '';
+    try { const u = fromB64(d.v); return td.decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: u.subarray(16, 28) }, await pwKey(pw, u.subarray(0, 16)), u.subarray(28))); }
+    catch (e) { return ''; }
+  }
+  async function keyWorks(secret) {   // 그 키로 목록(index)이 풀리면 맞는 키
+    const k = await keysOf(secret);
+    const s = await fs.collection('ppld').doc(k.pfx + 'index').get();
+    if (!s.exists || typeof s.data().v !== 'string') return null;
+    try { const u = fromB64(s.data().v); await crypto.subtle.decrypt({ name: 'AES-GCM', iv: u.subarray(0, 12) }, k.key, u.subarray(12)); return k; } catch (e) { return null; }
+  }
+  function remember(secret, uid, keepId) {   // 로그인은 창 닫을 때까지만, '아이디 저장'이면 아이디만 이 브라우저에 기억
+    try { sessionStorage.setItem('mb_auth', secret); if (keepId) localStorage.setItem('mb_uid', uid); else localStorage.removeItem('mb_uid'); } catch (e) {}
+  }
+  function logout() { try { sessionStorage.removeItem('mb_auth'); localStorage.removeItem('mb_auth'); } catch (e) {} location.reload(); }
+  function showAuth() {
+    showState(''); $('auth').hidden = false;
+    let saved = ''; try { saved = localStorage.getItem('mb_uid') || ''; } catch (e) {}
+    if (saved) { $('authId').value = saved; $('authKeep').checked = true; }
+    $('auth').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = $('authId').value.trim(), pw = $('authPw').value, keep = $('authKeep').checked;
+      const err = (m) => { $('authErr').textContent = m; $('authGo').disabled = false; };
+      if (!id || !pw) return err('아이디와 비밀번호를 넣어줘.');
+      $('authGo').disabled = true; $('authErr').textContent = '확인하는 중…';
+      try {
+        const sec = await openSecret(id, pw);
+        if (!sec || !(await keyWorks(sec))) return err('아이디나 비밀번호가 틀렸어.');
+        remember(sec, id, keep);
+        location.reload();
+      } catch (x) { err('연결이 안 돼. 인터넷 확인하고 다시 해줘.'); }
+    });
+    (saved ? $('authPw') : $('authId')).focus();
   }
 
   // 시작
   (async () => {
-    if (!SECRET) { showState('주소 끝에 #비밀키를 붙여서 열어줘.'); return; }
     if (!window.crypto || !crypto.subtle) { showState('이 브라우저는 암호화를 지원하지 않아. 크롬·엣지 최신 버전으로 열어줘.'); return; }
     try {
       firebase.initializeApp(FB);
       fs = firebase.firestore();
       fs.settings({ experimentalAutoDetectLongPolling: true, merge: true });
+      if (!SECRET) { showAuth(); return; }
       await initCrypto();
     } catch (e) { showState('연결 준비에 실패했어. 새로고침해 줘.'); return; }
+    $('tabs').hidden = false;
     buildTbmForm();
+    $('logout').addEventListener('click', logout);
+    $('tabDay').addEventListener('click', () => setTab('day'));
+    $('tabRep').addEventListener('click', () => setTab('rep'));
+    $('deckBack').addEventListener('click', closeReport);
+    $('modeScroll').addEventListener('click', () => setMode('scroll'));
+    $('modeOne').addEventListener('click', () => setMode('one'));
+    $('prevSlide').addEventListener('click', () => { slideAt--; renderDeck(); });
+    $('nextSlide').addEventListener('click', () => { slideAt++; renderDeck(); });
+    document.addEventListener('keydown', (e) => {
+      if (document.body.dataset.tab !== 'rep' || !repOpen || deckMode !== 'one' || /^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || '')) return;
+      if (e.key === 'ArrowLeft') { slideAt--; renderDeck(); } else if (e.key === 'ArrowRight') { slideAt++; renderDeck(); }
+    });
+    let sx = null;
+    $('slide').addEventListener('pointerdown', (e) => { sx = e.clientX; });
+    $('slide').addEventListener('pointerup', (e) => { if (sx === null) return; const dx = e.clientX - sx; sx = null; if (Math.abs(dx) > 50) { slideAt += dx < 0 ? 1 : -1; renderDeck(); } });
+    subs.repIndex = sub('rep_index', (v) => { repIndex = arr(v && v.list); $('repCount').hidden = !repIndex.length; $('repCount').textContent = repIndex.length; if (document.body.dataset.tab === 'rep' && !repOpen) renderReports(); });
+    let t0 = 'day'; try { t0 = localStorage.getItem('mb_tab') || 'day'; } catch (e) {}
+    setTab(t0 === 'rep' ? 'rep' : 'day');
     $('chatForm').addEventListener('submit', (e) => { e.preventDefault(); sendChat(); });
     $('chatText').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendChat(); } });
     $('chatText').addEventListener('focus', openDock);
     $('chatText').addEventListener('input', growChat);
+    $('attBtn').addEventListener('click', () => $('chatImg').click());
+    $('chatImg').addEventListener('change', () => { const f = $('chatImg').files[0]; $('chatImg').value = ''; sendImage(f); });
+    $('chatText').addEventListener('paste', (e) => { const f = Array.from((e.clipboardData && e.clipboardData.files) || []).find((x) => x.type.startsWith('image/')); if (f) { e.preventDefault(); sendImage(f); } });   // 캡처 붙여넣기도 사진으로
     $('dockClose').addEventListener('click', () => { closeDock(); $('chatText').blur(); });
     document.addEventListener('pointerdown', (e) => { if (dockOpen() && !$('dock').contains(e.target)) closeDock(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && dockOpen()) { closeDock(); $('chatText').blur(); } });
@@ -626,7 +957,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       toast('내일 TBM 저장됨');
     });
     subs.index = sub('index', (v, exists) => {
-      if (exists && v === undefined) { showState('비밀키가 맞지 않아. 받은 주소 그대로 열어줘.'); $('board').hidden = true; return; }
+      if (exists && v === undefined) { logout(); return; }   // 저장된 키가 안 맞으면 다시 로그인
       dates = arr(v && v.dates).filter(isDate).sort().reverse();
       if (!dates.includes(kstToday())) { showState('오늘 업무가 아직 안 올라왔어. 아침 TBM 발송 뒤 채워져.'); $('board').hidden = true; $('foot').hidden = true; return; }   // 당일 것만
       showState('');
