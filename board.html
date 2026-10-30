@@ -70,6 +70,18 @@ body:not([data-tab="rep"]) #repPage{display:none!important}
 body[data-tab="file"] #state,body[data-tab="file"] #board .grid,body[data-tab="file"] .progress,body[data-tab="file"] #foot{display:none!important}
 body:not([data-tab="file"]) #filePage{display:none!important}
 .rep-card:disabled{cursor:progress;opacity:.7}
+/* 자료실 : 보고서 카드와 달리 한 줄 목록, 여러 개 보낸 건 묶음 + '모두 받기' (사용자 10/30) */
+.file-list{display:flex;flex-direction:column;gap:8px;max-width:960px}
+.file-batch,.file-one{border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
+.fb-h{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.fb-t{font-weight:700;color:var(--ink);min-width:0;overflow-wrap:anywhere}
+.fb-m{font-size:12.5px;color:var(--muted);margin-right:auto}
+.file-row{display:flex;align-items:center;gap:12px;padding:9px 14px;min-width:0}
+.file-batch .file-row+.file-row{border-top:1px solid var(--line)}
+.fr-n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink);font-weight:600}
+.fr-n small{font-weight:400;color:var(--muted);margin-left:8px}
+.fr-m{font-size:12.5px;color:var(--muted);white-space:nowrap}
+.fr-b{flex:none}
 .drop{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:16px;background:color-mix(in srgb,var(--bg) 78%,transparent);pointer-events:none}
 .drop>div{padding:22px 28px;border:2px dashed var(--accent);border-radius:16px;background:var(--surface);color:var(--ink);font-size:16px;font-weight:700}
 
@@ -324,7 +336,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   </section>
 
   <section class="reports" id="filePage">
-    <div class="rep-list" id="fileList"></div>
+    <div class="file-list" id="fileList"></div>
   </section>
 
   <div id="board" hidden>
@@ -845,14 +857,26 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   function renderFiles() {
     const box = $('fileList'); box.replaceChildren();
     if (!fileIdx.length) { box.append(el('p', 'rep-empty', '올라온 파일 없음')); return; }
-    fileIdx.forEach((f, i) => {
-      const b = el('button', 'rep-card'); b.type = 'button'; b.title = f.name || ''; b.style.setProperty('--k', CK(i));
-      b.append(el('span', 'rep-date', isDate(f.date) ? md(f.date) + ' (' + dow(f.date) + ')' : ''), el('span', 'rep-t', f.name || '파일'));
-      if (f.text) b.append(el('span', 'rep-s', f.text));
-      b.append(el('span', 'rep-n af-s', kb(f.size || 0) + ' · 눌러서 받기'));   // getFile 이 이 글자를 '받는 중…'으로
+    const day = (d) => (isDate(d) ? md(d) + ' (' + dow(d) + ')' : '');
+    const row = (f, withDate) => {   // 한 줄 : 이름 · 크기(·날짜) · 받기 — getFile 이 버튼 안 .af-s 글자를 '받는 중…'으로
+      const r = el('div', 'file-row'); r.title = f.name || '';
+      const n = el('span', 'fr-n', f.name || '파일'); if (f.text) n.append(el('small', null, f.text));
+      const b = el('button', 'btn fr-b'); b.type = 'button'; b.append(el('span', 'af-s', '받기'));
       b.addEventListener('click', () => getFile(f, b));
-      box.append(b);
-    });
+      r.append(n, el('span', 'fr-m', kb(f.size || 0) + (withDate ? ' · ' + day(f.date) : '')), b);
+      return [r, b];
+    };
+    for (let i = 0; i < fileIdx.length;) {
+      const f = fileIdx[i], bid = f.batch && f.batch.id;
+      if (!bid) { const one = el('div', 'file-one'); one.append(row(f, true)[0]); box.append(one); i++; continue; }
+      const items = []; while (i < fileIdx.length && fileIdx[i].batch && fileIdx[i].batch.id === bid) items.push(fileIdx[i++]);
+      const g = el('div', 'file-batch'), h = el('div', 'fb-h');
+      const all = el('button', 'btn solid'); all.type = 'button'; all.textContent = '모두 받기';
+      h.append(el('span', 'fb-t', f.batch.title || '묶음'), el('span', 'fb-m', items.length + '개 · ' + day(f.date)), all); g.append(h);
+      const btns = items.map((x) => { const [r, b] = row(x, false); g.append(r); return [x, b]; });
+      all.addEventListener('click', async () => { all.disabled = true; for (const [x, b] of btns) await getFile(x, b); all.disabled = false; });   // 차례로 다 내려받음 (크롬은 처음 한 번 '여러 파일 다운로드' 허용을 물음)
+      box.append(g);
+    }
   }
   function renderReports() {
     if (repOpen) { renderDeck(); return; }
