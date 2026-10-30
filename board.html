@@ -50,7 +50,7 @@ h1 .w{color:var(--muted);font-weight:500}
 .btn.solid{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .btn.solid:hover:not(:disabled){filter:brightness(1.06)}
 
-/* 페이지 탭 : 오늘 업무 | 자료 (사용자 10/29 "대시보드에 페이지 2개, 2페이지에 정리한 자료를 PPT처럼") */
+/* 페이지 탭 : 오늘 업무 | 보고서 | 자료실 (사용자 10/29 "대시보드에 페이지 2개, 2페이지에 정리한 자료를 PPT처럼", 10/30 자료실 추가 · 자료 → 보고서) */
 .tabs{display:flex;align-items:center;gap:8px;flex-wrap:wrap;position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--bg);padding-block:8px;margin-block:-8px}   /* 아래로 내려도 탭이 화면 위에 붙어 있게 (사용자 10/29 "스크롤 내려간 상태에서 전환하려면 다시 위까지 올려야 돼서 불편") */
 /* 앱에서 맨 위에서 아래로 당기면 새로고침 (운동 앱과 같은 방식, 사용자 10/29) */
 #ptr{position:fixed;top:0;left:0;right:0;height:0;overflow:hidden;display:flex;align-items:flex-end;justify-content:center;gap:8px;padding-bottom:10px;color:var(--muted);font-size:13px;font-weight:600;background:var(--bg);z-index:12;pointer-events:none}
@@ -67,6 +67,11 @@ h1 .w{color:var(--muted);font-weight:500}
 .out:hover{color:var(--ink)}
 body[data-tab="rep"] #state,body[data-tab="rep"] #board .grid,body[data-tab="rep"] .progress,body[data-tab="rep"] #foot{display:none!important}
 body:not([data-tab="rep"]) #repPage{display:none!important}
+body[data-tab="file"] #state,body[data-tab="file"] #board .grid,body[data-tab="file"] .progress,body[data-tab="file"] #foot{display:none!important}
+body:not([data-tab="file"]) #filePage{display:none!important}
+.rep-card:disabled{cursor:progress;opacity:.7}
+.drop{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:16px;background:color-mix(in srgb,var(--bg) 78%,transparent);pointer-events:none}
+.drop>div{padding:22px 28px;border:2px dashed var(--accent);border-radius:16px;background:var(--surface);color:var(--ink);font-size:16px;font-weight:700}
 
 /* 자료 : 목록 → 한 장씩 넘겨 보는 슬라이드 */
 /* 자료 칸 안은 흰 바탕 (사용자 10/29 "자료 쪽은 칸 안 배경은 흰색으로 하자") — 칸 안에서만 색 값을 밝은 화면용으로 바꿔 씀 */
@@ -293,7 +298,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   </header>
 
   <nav class="tabs" id="tabs" hidden>
-    <div class="seg" role="tablist" aria-label="페이지"><button class="tab" role="tab" id="tabDay" type="button" aria-selected="true">오늘 업무</button><button class="tab" role="tab" id="tabRep" type="button" aria-selected="false">자료<span class="tab-n" id="repCount" hidden></span></button></div>
+    <div class="seg" role="tablist" aria-label="페이지"><button class="tab" role="tab" id="tabDay" type="button" aria-selected="true">오늘 업무</button><button class="tab" role="tab" id="tabRep" type="button" aria-selected="false">보고서<span class="tab-n" id="repCount" hidden></span></button><button class="tab" role="tab" id="tabFile" type="button" aria-selected="false">자료실<span class="tab-n" id="fileCount" hidden></span></button></div>
     <button class="out" id="logout" type="button">로그아웃</button>
   </nav>
 
@@ -316,6 +321,10 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       <div class="slide" id="slide" hidden></div>
       <div class="deck-nav" id="deckNav" hidden><button class="btn" id="prevSlide" type="button" aria-label="이전 장">‹</button><div class="dots" id="dots"></div><button class="btn" id="nextSlide" type="button" aria-label="다음 장">›</button></div>
     </div>
+  </section>
+
+  <section class="reports" id="filePage">
+    <div class="rep-list" id="fileList"></div>
   </section>
 
   <div id="board" hidden>
@@ -346,6 +355,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       </div>
     </div>
 
+    <div class="drop" id="drop" hidden><div>놓으면 메모에 첨부</div></div>
     <div class="dock" id="dock">
       <div class="dock-in">
         <div class="dock-panel" id="dockPanel" hidden>
@@ -731,7 +741,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   // 판 → PC : 감시 프로그램이 업무판/받은 파일/ 에 저장, PC → 판 : board.py send-file (사용자 10/29 "보드 채팅창으로 파일도 주고받을 수 있게, 메일로 왔다 갔다 할 필요 없이")
   const PART = 600000, FMAX = 15 * 1024 * 1024;
   const kb = (n) => n < 1048576 ? Math.max(1, Math.round(n / 1024)) + 'KB' : (n / 1048576).toFixed(1) + 'MB';
-  function attach(file) { if (!file) return; if (file.type.startsWith('image/') && !/gif|svg/.test(file.type)) sendImage(file); else sendFile(file); }
+  function attach(file) { if (!file) return; return file.type.startsWith('image/') && !/gif|svg/.test(file.type) ? sendImage(file) : sendFile(file); }
   async function sendFile(file) {
     if (!file || !canWrite || !viewDate) return;
     if (file.size > FMAX) { toast('15MB까지만 돼 · 더 크면 메일로'); return; }
@@ -825,15 +835,30 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     const was = document.body.dataset.tab;
     document.body.dataset.tab = tab;
     if (was && was !== tab) toTop();   // 내려간 채로 바꾸면 새 페이지 처음부터 보이게 (10/29)
-    $('tabDay').setAttribute('aria-selected', String(tab !== 'rep')); $('tabRep').setAttribute('aria-selected', String(tab === 'rep'));
+    $('tabDay').setAttribute('aria-selected', String(tab === 'day')); $('tabRep').setAttribute('aria-selected', String(tab === 'rep')); $('tabFile').setAttribute('aria-selected', String(tab === 'file'));
     try { localStorage.setItem('mb_tab', tab); } catch (e) {}
     if (tab === 'rep') renderReports();
+    if (tab === 'file') renderFiles();
+  }
+  // 페이지 3 : 자료실 (사용자 10/30 "나는 판 대화로 파일 보내고, 너는 자료실 탭 만들어서 내가 받고", "자료는 그대로 놔두고 자료실 탭이 따로") — files 목록(최근 것 먼저), board.py send-file 이 올림
+  let fileIdx = [];
+  function renderFiles() {
+    const box = $('fileList'); box.replaceChildren();
+    if (!fileIdx.length) { box.append(el('p', 'rep-empty', '올라온 파일 없음')); return; }
+    fileIdx.forEach((f, i) => {
+      const b = el('button', 'rep-card'); b.type = 'button'; b.title = f.name || ''; b.style.setProperty('--k', CK(i));
+      b.append(el('span', 'rep-date', isDate(f.date) ? md(f.date) + ' (' + dow(f.date) + ')' : ''), el('span', 'rep-t', f.name || '파일'));
+      if (f.text) b.append(el('span', 'rep-s', f.text));
+      b.append(el('span', 'rep-n af-s', kb(f.size || 0) + ' · 눌러서 받기'));   // getFile 이 이 글자를 '받는 중…'으로
+      b.addEventListener('click', () => getFile(f, b));
+      box.append(b);
+    });
   }
   function renderReports() {
     if (repOpen) { renderDeck(); return; }
     $('deck').hidden = true;
     const box = $('repList'); box.hidden = false; box.replaceChildren();
-    if (!repIndex.length) { box.append(el('p', 'rep-empty', '아직 올린 자료가 없어. 정리해 달라고 하면 여기에 올려둘게.')); return; }
+    if (!repIndex.length) { box.append(el('p', 'rep-empty', '아직 올린 보고서가 없어. 정리해 달라고 하면 여기에 올려둘게.')); return; }
     repIndex.forEach((r, i) => {
       const b = el('button', 'rep-card'); b.type = 'button'; b.style.setProperty('--k', CK(i));
       b.append(el('span', 'rep-date', isDate(r.date) ? md(r.date) + ' (' + dow(r.date) + ')' : ''), el('span', 'rep-t', r.title || ''));
@@ -993,7 +1018,8 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     buildTbmForm();
     $('logout').addEventListener('click', logout);
     $('tabDay').addEventListener('click', () => setTab('day'));
-    $('tabRep').addEventListener('click', () => { if (document.body.dataset.tab === 'rep' && repOpen) { closeReport(); toTop(); } else setTab('rep'); });   // 자료 보다가 '자료' 한 번 더 누르면 목록으로 (사용자 10/29 "자료를 한 번 더 누르면 목록으로 가던가")
+    $('tabRep').addEventListener('click', () => { if (document.body.dataset.tab === 'rep' && repOpen) { closeReport(); toTop(); } else setTab('rep'); });   // 보고서 보다가 '보고서' 한 번 더 누르면 목록으로 (사용자 10/29 "자료를 한 번 더 누르면 목록으로 가던가")
+    $('tabFile').addEventListener('click', () => setTab('file'));
     $('deckBack').addEventListener('click', closeReport);
     $('modeScroll').addEventListener('click', () => setMode('scroll'));
     $('modeOne').addEventListener('click', () => setMode('one'));
@@ -1007,8 +1033,9 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     $('slide').addEventListener('pointerdown', (e) => { sx = e.clientX; });
     $('slide').addEventListener('pointerup', (e) => { if (sx === null) return; const dx = e.clientX - sx; sx = null; if (Math.abs(dx) > 50) { slideAt += dx < 0 ? 1 : -1; renderDeck(); } });
     subs.repIndex = sub('rep_index', (v) => { repIndex = arr(v && v.list); $('repCount').hidden = !repIndex.length; $('repCount').textContent = repIndex.length; if (document.body.dataset.tab === 'rep' && !repOpen) renderReports(); });
+    subs.files = sub('files', (v) => { fileIdx = arr(v && v.list); $('fileCount').hidden = !fileIdx.length; $('fileCount').textContent = fileIdx.length; if (document.body.dataset.tab === 'file') renderFiles(); });
     let t0 = 'day'; try { t0 = localStorage.getItem('mb_tab') || 'day'; } catch (e) {}
-    setTab(t0 === 'rep' ? 'rep' : 'day');
+    setTab(['rep', 'file'].includes(t0) ? t0 : 'day');
     $('chatForm').addEventListener('submit', (e) => { e.preventDefault(); sendChat(); });
     $('chatText').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendChat(); } });
     $('chatText').addEventListener('focus', openDock);
@@ -1016,6 +1043,14 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     $('attBtn').addEventListener('click', () => $('chatImg').click());
     $('chatImg').addEventListener('change', () => { const f = $('chatImg').files[0]; $('chatImg').value = ''; attach(f); });
     $('chatText').addEventListener('paste', (e) => { const fl = Array.from((e.clipboardData && e.clipboardData.files) || []); const f = fl.find((x) => x.type.startsWith('image/')) || fl[0]; if (f) { e.preventDefault(); attach(f); } });   // 캡처 붙여넣기는 사진, 복사한 파일은 파일로
+    // 끌어다 놓기 (사용자 10/30 "파일 드래그로도 첨부되게") : 창 어디에 놓아도 메모에 첨부, 여러 개면 하나씩 차례로
+    let dragN = 0;
+    const hasFiles = (e) => Array.from((e.dataTransfer && e.dataTransfer.types) || []).includes('Files');
+    const dropOn = () => canWrite && !!viewDate;
+    window.addEventListener('dragenter', (e) => { if (!hasFiles(e) || !dropOn()) return; e.preventDefault(); dragN++; $('drop').hidden = false; });
+    window.addEventListener('dragover', (e) => { if (!hasFiles(e)) return; e.preventDefault(); e.dataTransfer.dropEffect = dropOn() ? 'copy' : 'none'; });
+    window.addEventListener('dragleave', (e) => { if (!hasFiles(e)) return; if (--dragN <= 0) { dragN = 0; $('drop').hidden = true; } });
+    window.addEventListener('drop', async (e) => { if (!hasFiles(e)) return; e.preventDefault(); dragN = 0; $('drop').hidden = true; if (!dropOn()) return; for (const f of Array.from(e.dataTransfer.files)) await attach(f); });
     $('dockClose').addEventListener('click', () => { closeDock(); $('chatText').blur(); });
     document.addEventListener('pointerdown', (e) => { if (dockOpen() && !$('dock').contains(e.target)) closeDock(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && dockOpen()) { closeDock(); $('chatText').blur(); } });
