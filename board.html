@@ -72,6 +72,12 @@ body:not([data-tab="file"]) #filePage{display:none!important}
 .rep-card:disabled{cursor:progress;opacity:.7}
 /* 자료실 : 보고서 카드와 달리 한 줄 목록, 여러 개 보낸 건 묶음 + '모두 받기' (사용자 10/30) */
 .file-list{display:flex;flex-direction:column;gap:8px;max-width:960px}
+/* TBM 회의록은 정기라 자료실 오른쪽 칸에 따로 (사용자 11/2 "TBM은 정기적이니까 오른쪽에 따로 만들자 칸을") — 폰에선 맨 위 */
+.file-cols{display:grid;gap:14px;align-items:start}
+.file-tbm{order:-1;border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
+.file-tbm .file-row+.file-row{border-top:1px solid var(--line)}
+.file-tbm .rep-empty{border:0;padding:14px}
+@media (min-width:880px){.file-cols{grid-template-columns:minmax(0,1fr) 320px}.file-tbm{order:0}}
 .file-batch,.file-one{border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
 .fb-h{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .fb-t{font-weight:700;color:var(--ink);min-width:0;overflow-wrap:anywhere}
@@ -181,6 +187,11 @@ h3.s-title{padding-left:12px;border-left:4px solid var(--sc)}
 .body{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
 .t{font-weight:600;color:var(--ink);overflow-wrap:anywhere}
 .n{font-size:13.5px;color:var(--ink-2);overflow-wrap:anywhere}
+/* 항목 밑 메모는 ' · '마다 줄 나눔 + 첫 줄 밝게 (사용자 11/2 "업무 밑에 너가 적어 놓은 메모 잘 안 읽게 되는데") */
+.n.nlist{display:flex;flex-direction:column;gap:2px;font-size:14px;line-height:1.45;margin-top:2px}
+.n .nl{position:relative;padding-left:12px}
+.n .nl::before{content:'';position:absolute;left:2px;top:.62em;width:4px;height:4px;border-radius:50%;background:var(--muted)}
+.n .nl:first-child{color:var(--ink);font-weight:600}
 .item.done .t{color:var(--muted);text-decoration:line-through;text-decoration-thickness:1px}
 .item.done .n{color:var(--muted)}
 .chip{display:inline-block;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;vertical-align:2px;margin-left:4px;text-decoration:none}
@@ -336,7 +347,10 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   </section>
 
   <section class="reports" id="filePage">
-    <div class="file-list" id="fileList"></div>
+    <div class="file-cols">
+      <div class="file-list" id="fileList"></div>
+      <aside class="file-tbm"><div class="fb-h"><span class="fb-t">TBM 회의록</span><span class="fb-m">매일 아침 올라옴</span></div><div id="tbmFiles"></div></aside>
+    </div>
   </section>
 
   <div id="board" hidden>
@@ -391,6 +405,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
 
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script>
 (() => {
   // 운동 앱과 같은 파이어베이스, 운동 앱 컬렉션(ppld) 안 'bd_해시_' 문서만 씀 — 내용은 주소 # 뒤 비밀키로 암호화 (board.py 와 같은 방식)
@@ -411,6 +426,11 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
   const uid = () => 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   const arr = (v) => (Array.isArray(v) ? v : []);
+  const noteEl = (s) => {   // 메모 ' · ' 구분 → 한 줄씩
+    const parts = String(s).split(' · ').map((x) => x.trim()).filter(Boolean), d = el('div', 'n');
+    if (parts.length < 2) { d.textContent = String(s); return d; }
+    d.classList.add('nlist'); parts.forEach((x) => d.append(el('span', 'nl', x))); return d;
+  };
   const nowIso = () => new Date().toISOString();
 
   // 로그인 (사용자 10/29 "로그인해야 되게, 아이디 비밀번호", "자동 로그인 말고 아이디 저장만") : 로그인은 그 창(세션) 동안만, '아이디 저장'이면 아이디만 기억. 비밀키는 아이디·비밀번호로 잠근 봉투 문서(bd_login_<아이디 해시>)에서 꺼냄.
@@ -420,7 +440,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   try { localStorage.removeItem('mb_secret'); localStorage.removeItem('mb_auth'); SECRET = sessionStorage.getItem('mb_auth') || ''; } catch (e) {}
 
   // 암호화 : PBKDF2-SHA256 15만 회 → AES-GCM, 저장값 = base64(iv 12바이트 + 암호문)
-  let KEY = null, PFX = '', fs = null;
+  let KEY = null, PFX = '', fs = null, auth = null;
   const te = new TextEncoder(), td = new TextDecoder();
   const toB64 = (u8) => { let s = ''; for (let i = 0; i < u8.length; i += 8192) s += String.fromCharCode.apply(null, u8.subarray(i, i + 8192)); return btoa(s); };
   const fromB64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
@@ -451,7 +471,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       const my = ++seq; const d = s.exists ? s.data() : null;
       const v = d && typeof d.v === 'string' ? await dec(d.v) : null;
       if (my === seq) cb(v, !!d);
-    }, () => cb(null, false));
+    }, (e) => { if (e && e.code === 'permission-denied') return logout(); cb(null, false); });   // 파이어베이스 로그인이 풀렸으면 다시 로그인
   }
   function subList(name, cb) {
     let seq = 0;
@@ -459,7 +479,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       const my = ++seq; const d = s.exists ? s.data() : null; const out = [];
       for (const x of arr(d && d.m)) { const o = await dec(x); if (o) out.push(o); }
       if (my === seq) cb(out);
-    }, () => cb([]));
+    }, (e) => { if (e && e.code === 'permission-denied') return logout(); cb([]); });
   }
   async function put(name, obj) { await ref(name).set({ v: await enc(obj) }); }
   async function append(name, obj) { await ref(name).set({ m: firebase.firestore.FieldValue.arrayUnion(await enc(obj)) }, { merge: true }); }
@@ -539,7 +559,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     if (it._reg || it.regular) lab.append(' ', el('span', 'chip reg', '정기'));
     if (it.pri === 'high' && !it._must) lab.append(' ', el('span', 'chip hi', '높음'));
     body.append(lab);
-    if (it.note) body.append(el('div', 'n', it.note));
+    if (it.note) body.append(noteEl(it.note));
     if (id) body.append(memoLine(id));
     if (id && cnotes[id]) { const c = el('div', 'cl'); c.append(el('span', 'memo-k', '답'), el('span', null, cnotes[id])); body.append(c); }
     row.append(box, body); li.append(row);
@@ -589,7 +609,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     const tag = [isDate(it.date) ? md(it.date) : '', it.who || ''].filter(Boolean).join(' · ');
     if (tag) lab.prepend(el('span', 'dchip', tag));
     body.append(lab);
-    if (it.note) body.append(el('div', 'n', it.note));
+    if (it.note) body.append(noteEl(it.note));
     if (id) body.append(memoLine(id));
     if (id && cnotes[id]) { const c = el('div', 'cl'); c.append(el('span', 'memo-k', '답'), el('span', null, cnotes[id])); body.append(c); }
     const judge = el('div', 'judge');
@@ -652,7 +672,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       const tt = el('div', 't', ev.text || '');
       if (ev.pri === 'high') tt.append(' ', el('span', 'chip hi', '높음'));
       what.append(tt);
-      if (ev.note) what.append(el('div', 'n', ev.note));
+      if (ev.note) what.append(noteEl(ev.note));
       li.append(when, what); ol.append(li);
     }
   }
@@ -854,10 +874,21 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   }
   // 페이지 3 : 자료실 (사용자 10/30 "나는 판 대화로 파일 보내고, 너는 자료실 탭 만들어서 내가 받고", "자료는 그대로 놔두고 자료실 탭이 따로") — files 목록(최근 것 먼저), board.py send-file 이 올림
   let fileIdx = [];
+  const isTbmFile = (f) => /^TBM 회의록/.test(f.name || '');   // 매일 아침 예약작업이 올리는 TBM (11/2~) → 오른쪽 칸
   function renderFiles() {
     const box = $('fileList'); box.replaceChildren();
-    if (!fileIdx.length) { box.append(el('p', 'rep-empty', '올라온 파일 없음')); return; }
     const day = (d) => (isDate(d) ? md(d) + ' (' + dow(d) + ')' : '');
+    const tb = $('tbmFiles'); tb.replaceChildren();
+    const tbms = fileIdx.filter(isTbmFile).slice(0, 10);
+    if (!tbms.length) tb.append(el('p', 'rep-empty', '아직 없음'));
+    for (const f of tbms) {   // 한 줄 : 날짜 · 받기 (이름은 매일 같아서 날짜로 보여 줌)
+      const r = el('div', 'file-row'); r.title = f.text || f.name || '';
+      const b = el('button', 'btn fr-b'); b.type = 'button'; b.append(el('span', 'af-s', '받기'));
+      b.addEventListener('click', () => getFile(f, b));
+      r.append(el('span', 'fr-n', day(f.date) || f.name), el('span', 'fr-m', kb(f.size || 0)), b); tb.append(r);
+    }
+    const list = fileIdx.filter((f) => !isTbmFile(f));
+    if (!list.length) { box.append(el('p', 'rep-empty', '올라온 파일 없음')); return; }
     const row = (f, withDate) => {   // 한 줄 : 이름 · 크기(·날짜) · 받기 — getFile 이 버튼 안 .af-s 글자를 '받는 중…'으로
       const r = el('div', 'file-row'); r.title = f.name || '';
       const n = el('span', 'fr-n', f.name || '파일'); if (f.text) n.append(el('small', null, f.text));
@@ -866,10 +897,10 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       r.append(n, el('span', 'fr-m', kb(f.size || 0) + (withDate ? ' · ' + day(f.date) : '')), b);
       return [r, b];
     };
-    for (let i = 0; i < fileIdx.length;) {
-      const f = fileIdx[i], bid = f.batch && f.batch.id;
+    for (let i = 0; i < list.length;) {
+      const f = list[i], bid = f.batch && f.batch.id;
       if (!bid) { const one = el('div', 'file-one'); one.append(row(f, true)[0]); box.append(one); i++; continue; }
-      const items = []; while (i < fileIdx.length && fileIdx[i].batch && fileIdx[i].batch.id === bid) items.push(fileIdx[i++]);
+      const items = []; while (i < list.length && list[i].batch && list[i].batch.id === bid) items.push(list[i++]);
       const g = el('div', 'file-batch'), h = el('div', 'fb-h');
       const all = el('button', 'btn solid'); all.type = 'button'; all.textContent = '모두 받기';
       h.append(el('span', 'fb-t', f.batch.title || '묶음'), el('span', 'fb-m', items.length + '개 · ' + day(f.date)), all); g.append(h);
@@ -1007,7 +1038,14 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   function remember(secret, uid, keepId) {   // 로그인은 창 닫을 때까지만, '아이디 저장'이면 아이디만 이 브라우저에 기억
     try { sessionStorage.setItem('mb_auth', secret); if (keepId) localStorage.setItem('mb_uid', uid); else localStorage.removeItem('mb_uid'); } catch (e) {}
   }
-  function logout() { try { sessionStorage.removeItem('mb_auth'); localStorage.removeItem('mb_auth'); } catch (e) {} location.reload(); }
+  function logout() { try { sessionStorage.removeItem('mb_auth'); localStorage.removeItem('mb_auth'); } catch (e) {} Promise.resolve(auth && auth.signOut()).catch(() => {}).finally(() => location.reload()); }
+  // 파이어베이스 로그인 (2026-10-30 규칙 잠금, 사용자 "잠궈") : 판 아이디·비밀번호에서 계정 메일·비밀번호를 만들어 로그인 (board.py fb_cred·운동 앱과 같은 방식).
+  // 로그인한 계정만 ppld 를 읽고 씀. 계정이 아직 없거나 꺼져 있으면(잠그기 전) 그냥 넘어감
+  async function fbSignIn(id, pw) {
+    const u = id.trim().toLowerCase(), sha = async (t) => hex(new Uint8Array(await crypto.subtle.digest('SHA-256', te.encode(t))));
+    try { await auth.signInWithEmailAndPassword('mb-' + (await sha('meritz-board-fb|' + u)).slice(0, 20) + '@automatic-becf5.firebaseapp.com', await sha('meritz-board-fbpw|' + u + '|' + pw)); }
+    catch (e) { console.warn('파이어베이스 로그인 안 됨', e.code); }
+  }
   function showAuth() {
     showState(''); $('auth').hidden = false;
     let saved = ''; try { saved = localStorage.getItem('mb_uid') || ''; } catch (e) {}
@@ -1019,11 +1057,12 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       if (!id || !pw) return err('아이디와 비밀번호를 넣어줘.');
       $('authGo').disabled = true; $('authErr').textContent = '확인하는 중…';
       try {
+        await fbSignIn(id, pw);
         const sec = await openSecret(id, pw);
         if (!sec || !(await keyWorks(sec))) return err('아이디나 비밀번호가 틀렸어.');
         remember(sec, id, keep);
         location.reload();
-      } catch (x) { err('연결이 안 돼. 인터넷 확인하고 다시 해줘.'); }
+      } catch (x) { err(x && x.code === 'permission-denied' ? '아이디나 비밀번호가 틀렸어.' : '연결이 안 돼. 인터넷 확인하고 다시 해줘.'); }
     });
     (saved ? $('authPw') : $('authId')).focus();
   }
@@ -1035,6 +1074,9 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       firebase.initializeApp(FB);
       fs = firebase.firestore();
       fs.settings({ experimentalAutoDetectLongPolling: true, merge: true });
+      auth = firebase.auth();
+      await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);   // 판 로그인처럼 창 닫을 때까지만
+      await new Promise((r) => { const off = auth.onAuthStateChanged(() => { off(); r(); }); });   // 저장된 로그인 복구 기다림 (안 기다리면 첫 구독이 거절됨)
       if (!SECRET) { showAuth(); return; }
       await initCrypto();
     } catch (e) { showState('연결 준비에 실패했어. 새로고침해 줘.'); return; }
