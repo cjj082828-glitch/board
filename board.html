@@ -187,11 +187,11 @@ h3.s-title{padding-left:12px;border-left:4px solid var(--sc)}
 .body{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
 .t{font-weight:600;color:var(--ink);overflow-wrap:anywhere}
 .n{font-size:13.5px;color:var(--ink-2);overflow-wrap:anywhere}
-/* 항목 밑 메모는 ' · '마다 줄 나눔 + 첫 줄 밝게 (사용자 11/2 "업무 밑에 너가 적어 놓은 메모 잘 안 읽게 되는데") */
+/* 항목 밑 메모는 ' · '마다 줄 나눔 (사용자 11/2 "업무 밑에 너가 적어 놓은 메모 잘 안 읽게 되는데") + **중요한 것**만 밝고 굵게 ("꼭 첫 줄만 굵게 말고 중요한 것들은 굵게") */
 .n.nlist{display:flex;flex-direction:column;gap:2px;font-size:14px;line-height:1.45;margin-top:2px}
 .n .nl{position:relative;padding-left:12px}
 .n .nl::before{content:'';position:absolute;left:2px;top:.62em;width:4px;height:4px;border-radius:50%;background:var(--muted)}
-.n .nl:first-child{color:var(--ink);font-weight:600}
+.n b{color:var(--ink);font-weight:700}
 .item.done .t{color:var(--muted);text-decoration:line-through;text-decoration-thickness:1px}
 .item.done .n{color:var(--muted)}
 .chip{display:inline-block;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;vertical-align:2px;margin-left:4px;text-decoration:none}
@@ -426,10 +426,10 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
   const uid = () => 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   const arr = (v) => (Array.isArray(v) ? v : []);
+  const marked = (box, t) => { String(t).split(/\*\*(.+?)\*\*/).forEach((x, i) => { if (x) box.append(i % 2 ? el('b', null, x) : document.createTextNode(x)); }); return box; };   // **글자** → 굵게
   const noteEl = (s) => {   // 메모 ' · ' 구분 → 한 줄씩
     const parts = String(s).split(' · ').map((x) => x.trim()).filter(Boolean), d = el('div', 'n');
-    if (parts.length < 2) { d.textContent = String(s); return d; }
-    d.classList.add('nlist'); parts.forEach((x) => d.append(el('span', 'nl', x))); return d;
+    d.classList.add('nlist');   // 한 줄이어도 앞에 점 (사용자 11/2 "줄 한 개여도 동일하게 해줘 앞에 점 같은 거 넣고") parts.forEach((x) => d.append(marked(el('span', 'nl'), x))); return d;
   };
   const nowIso = () => new Date().toISOString();
 
