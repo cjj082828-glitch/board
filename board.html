@@ -429,7 +429,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   const marked = (box, t) => { String(t).split(/\*\*(.+?)\*\*/).forEach((x, i) => { if (x) box.append(i % 2 ? el('b', null, x) : document.createTextNode(x)); }); return box; };   // **글자** → 굵게
   const noteEl = (s) => {   // 메모 ' · ' 구분 → 한 줄씩
     const parts = String(s).split(' · ').map((x) => x.trim()).filter(Boolean), d = el('div', 'n');
-    d.classList.add('nlist');   // 한 줄이어도 앞에 점 (사용자 11/2 "줄 한 개여도 동일하게 해줘 앞에 점 같은 거 넣고") parts.forEach((x) => d.append(marked(el('span', 'nl'), x))); return d;
+    d.classList.add('nlist'); parts.forEach((x) => d.append(marked(el('span', 'nl'), x))); return d;   // 한 줄이어도 앞에 점 (사용자 11/2 "줄 한 개여도 동일하게 해줘 앞에 점 같은 거 넣고")
   };
   const nowIso = () => new Date().toISOString();
 
