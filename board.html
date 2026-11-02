@@ -63,6 +63,10 @@ h1 .w{color:var(--muted);font-weight:500}
 .tab[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
 .tab-n{font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;background:var(--sunken);color:var(--ink-2)}
 .tab[aria-selected="true"] .tab-n{background:color-mix(in srgb,var(--accent-ink) 16%,transparent);color:var(--accent-ink)}
+.daynav{display:flex;align-items:center;gap:6px}   /* 지난 판 보기 (사용자 11/2 "그전 것도 보이게 하자") — 지난 날은 읽기만 */
+.daynav select{height:34px;padding:0 8px;border:1px solid var(--line);border-radius:var(--r-ctl);background:var(--surface);color:var(--ink);font:inherit;font-size:13.5px}
+.daynav .btn{height:34px;padding:0 10px}
+body.past #dLabel{color:var(--amber);font-weight:700}
 .out{margin-left:auto;border:0;background:none;color:var(--muted);font-size:13px;cursor:pointer;padding:6px 4px}
 .out:hover{color:var(--ink)}
 body[data-tab="rep"] #state,body[data-tab="rep"] #board .grid,body[data-tab="rep"] .progress,body[data-tab="rep"] #foot{display:none!important}
@@ -323,11 +327,12 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
 <div class="wrap">
   <header class="top">
     <div>
-      <div class="eyebrow"><span id="dYear">—</span><span>오늘 업무</span></div>
+      <div class="eyebrow"><span id="dYear">—</span><span id="dLabel">오늘 업무</span></div>
       <h1 id="dTitle">업무판</h1>
       <div class="meta" id="meta"></div>
     </div>
     <div class="top-r">
+      <div class="daynav" id="dayNav" hidden><button class="btn" id="prevDay" type="button" aria-label="전날 판">‹</button><select id="daySel" aria-label="판 날짜"></select><button class="btn" id="nextDay" type="button" aria-label="다음 날 판">›</button><button class="btn" id="toToday" type="button">오늘</button></div>
       <div class="progress" id="progress" hidden>
         <span class="num" id="progNum">0 / 0</span><span class="lbl">체크</span>
         <div class="bar"><i id="progBar"></i></div>
@@ -1029,8 +1034,23 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     subs.cl = sub('cl_' + date, (v) => { if (date !== viewDate) return; cnotes = { ...((v && v.notes) || {}) }; renderTasks(); });
   }
   function go(date) {
-    if (date !== viewDate) { viewDate = date; watchDay(); }
-    renderAll();
+    if (date !== viewDate) {
+      viewDate = date; canWrite = date === kstToday();   // 지난 판은 읽기만 (체크·메모·대화 안 됨)
+      document.body.classList.toggle('past', !canWrite);
+      $('dLabel').textContent = canWrite ? '오늘 업무' : '지난 판 · 읽기만';
+      $('chatText').disabled = !canWrite; $('chatText').placeholder = canWrite ? '메모' : '지난 판은 읽기만 — 오늘로 가서 써 줘';
+      watchDay();
+    }
+    showState(''); renderAll(); setDayNav();
+  }
+  function setDayNav() {   // dates = 최근 것 먼저
+    $('dayNav').hidden = !dates.length;
+    const sel = $('daySel'); sel.replaceChildren();
+    for (const d of dates) { const o = el('option', null, md(d) + ' (' + dow(d) + ')' + (d === kstToday() ? ' · 오늘' : '')); o.value = d; sel.append(o); }
+    if (viewDate) sel.value = viewDate;
+    const i = dates.indexOf(viewDate);
+    $('prevDay').disabled = i < 0 || i >= dates.length - 1; $('nextDay').disabled = i <= 0;
+    $('toToday').hidden = viewDate === kstToday() || !dates.includes(kstToday());
   }
   function renderAll() {
     const d = dayDoc;
@@ -1110,6 +1130,10 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     $('tabDay').addEventListener('click', () => setTab('day'));
     $('tabRep').addEventListener('click', () => { if (document.body.dataset.tab === 'rep' && repOpen) { closeReport(); toTop(); } else setTab('rep'); });   // 보고서 보다가 '보고서' 한 번 더 누르면 목록으로 (사용자 10/29 "자료를 한 번 더 누르면 목록으로 가던가")
     $('tabFile').addEventListener('click', () => setTab('file'));
+    $('daySel').addEventListener('change', () => go($('daySel').value));
+    $('prevDay').addEventListener('click', () => { const i = dates.indexOf(viewDate); if (i >= 0 && i < dates.length - 1) go(dates[i + 1]); });
+    $('nextDay').addEventListener('click', () => { const i = dates.indexOf(viewDate); if (i > 0) go(dates[i - 1]); });
+    $('toToday').addEventListener('click', () => go(kstToday()));
     $('deckBack').addEventListener('click', closeReport);
     $('modeScroll').addEventListener('click', () => setMode('scroll'));
     $('modeOne').addEventListener('click', () => setMode('one'));
@@ -1160,8 +1184,8 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     subs.index = sub('index', (v, exists) => {
       if (exists && v === undefined) { logout(); return; }   // 저장된 키가 안 맞으면 다시 로그인
       dates = arr(v && v.dates).filter(isDate).sort().reverse();
-      if (!dates.includes(kstToday())) { showState('오늘 업무가 아직 안 올라왔어. 아침 TBM 발송 뒤 채워져.'); $('board').hidden = true; $('foot').hidden = true; return; }   // 당일 것만
-      showState('');
+      if (viewDate && dates.includes(viewDate)) { go(viewDate); return; }   // 지난 판 보던 중이면 그대로
+      if (!dates.includes(kstToday())) { setDayNav(); showState('오늘 업무가 아직 안 올라왔어. 아침 TBM 발송 뒤 채워져. (위에서 지난 판은 볼 수 있어)'); $('board').hidden = true; $('foot').hidden = true; return; }
       go(kstToday());
     });
     subs.status = sub('status', (v) => { statusAt = (v && Date.parse(v.at)) || 0; paintCState(); });
