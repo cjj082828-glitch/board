@@ -235,6 +235,11 @@ h3.s-title{padding-left:12px;border-left:4px solid var(--sc)}
 .sec.kk .plate{color:var(--k)}
 .sec.sec-today.kk{border-width:2px;border-left-width:10px;box-shadow:0 0 0 1px color-mix(in srgb,var(--k) 25%,transparent),0 4px 18px color-mix(in srgb,#000 35%,transparent)}   /* 오늘 업무가 제일 먼저 눈에 (굵은 띠·두꺼운 테두리·큰 제목, 바탕은 다른 칸과 같게 — 사용자 11/2 "바탕은 원래대로") */
 .sec.sec-today .sec-h .plate{font-size:19px}
+/* 진행 중 일정은 오늘 업무 칸 안 오른쪽 (사용자 11/2 "오늘 업무 칸 안에 진행 중 일정 칸 넣는 식으로, 오른쪽에") — 좁으면 아래, 없으면 안 보임 */
+.today-in{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+.today-ongoing{border-top:1px solid var(--line);padding-top:12px}
+.today-ongoing .plate.sub{font-size:15px;margin:0 0 4px}
+@media (min-width:880px){.today-in{grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:28px}.today-in.solo{grid-template-columns:minmax(0,1fr)}.today-ongoing{border-top:0;padding-top:0;border-left:1px solid var(--line);padding-left:24px}}
 .sec-reg .dday,.sec-reg .ev.hi .dday{color:var(--c2);background:color-mix(in srgb,var(--c2) 15%,transparent)}
 .sec-reg .when .d{color:var(--c2)}
 .sec-reg .what .t{color:var(--ink-2);font-weight:500}
@@ -333,7 +338,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       <div class="meta" id="meta"></div>
     </div>
     <div class="top-r">
-      <div class="daynav" id="dayNav" hidden><button class="btn" id="prevDay" type="button" aria-label="전날 판">‹</button><select id="daySel" aria-label="판 날짜"></select><button class="btn" id="nextDay" type="button" aria-label="다음 날 판">›</button><button class="btn" id="toToday" type="button">오늘</button></div>
+      <div class="daynav" id="dayNav" hidden><button class="btn" id="toToday" type="button">오늘</button><button class="btn" id="prevDay" type="button" aria-label="전날 판">‹</button><select id="daySel" aria-label="판 날짜"></select><button class="btn" id="nextDay" type="button" aria-label="다음 날 판">›</button></div>
       <div class="progress" id="progress" hidden>
         <span class="num" id="progNum">0 / 0</span><span class="lbl">체크</span>
         <div class="bar"><i id="progBar"></i></div>
@@ -377,7 +382,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   <div id="board" hidden>
     <div class="grid">
       <div class="col c-today">
-        <section class="sec sec-today kk" style="--k:#FF5A5A"><div class="sec-h"><h2 class="plate">오늘 업무</h2></div><ul class="list tasks" id="todayList"></ul></section>
+        <section class="sec sec-today kk" style="--k:#FF5A5A"><div class="sec-h"><h2 class="plate">오늘 업무</h2></div><div class="today-in" id="todayIn"><ul class="list tasks" id="todayList"></ul><div class="today-ongoing" id="todayOngoing"><h3 class="plate sub">진행 중 일정</h3><ol class="timeline" id="ongoing"></ol></div></div></section>
       </div>
 
       <div class="col c-tasks">
@@ -387,7 +392,6 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       </div>
 
       <div class="col inputs c-sched">
-        <section class="sec kk" style="--k:#FF5A5A"><div class="sec-h"><h2 class="plate">진행 중 일정</h2></div><ol class="timeline" id="ongoing"></ol></section>
         <section class="sec kk" style="--k:#F2B95C"><div class="sec-h"><h2 class="plate">다가오는 일정</h2></div><ol class="timeline" id="upcoming"></ol></section>
         <section class="sec sec-reg kk" style="--k:var(--c2)"><div class="sec-h"><h2 class="plate">정기 업무</h2><span class="aside k">매달·매주 반복</span></div><ol class="timeline" id="upRegular"></ol></section>
         <section class="sec kk" style="--k:#9FB3C8"><div class="sec-h"><h2 class="plate">회의 때 말할 것</h2></div><ul class="say" id="meeting"></ul></section>
@@ -681,6 +685,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       if (s > 0) next.push([ev, s, e]); else if (e >= 0) now.push([ev, s, e]);
     }
     fillTimeline('ongoing', now); fillTimeline('upcoming', next); fillTimeline('upRegular', reg.map(([ev, s]) => [ev, s, s]));
+    $('todayOngoing').hidden = !now.length; $('todayIn').classList.toggle('solo', !now.length);   // 진행 중 일정 없으면 오늘 업무가 칸 전체
   }
   function fillTimeline(id, list) {
     const ol = $(id); ol.replaceChildren();
@@ -787,7 +792,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   const isPic = (f) => f.type.startsWith('image/') && !/gif|svg/.test(f.type);
   let attPending = [];   // 붙여 놓고 아직 안 보낸 사진·파일 → '등록' 때 글이랑 같이
   function attach(file) {
-    if (!file || !canWrite || !viewDate) return;
+    if (!file) return;
     if (!isPic(file) && file.size > FMAX) { toast('15MB까지만 돼 · 더 크면 메일로'); return; }
     attPending.push({ file, url: isPic(file) ? URL.createObjectURL(file) : '' }); renderTray();
     $('chatText').focus();
@@ -832,17 +837,18 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   }
   async function sendChat() {
     const v = $('chatText').value.trim();
-    if ((!v && !attPending.length) || !canWrite || !viewDate) return;
+    if (!v && !attPending.length) return;
+    const cd = kstToday();   // 대화는 지난 판을 보고 있어도 늘 오늘 대화로 (사용자 11/2 "오늘이 아니면 채팅을 못 치는 거 같은데, 불편해")
     $('chatText').value = ''; growChat();
     waitingSince = Date.now();
-    if (!attPending.length) { append('chat_' + viewDate, { id: uid(), from: 'me', text: v, at: nowIso() }).catch(writeFailed); renderChat(); setTimeout(renderChat, 301000); return; }
+    if (!attPending.length) { append('chat_' + cd, { id: uid(), from: 'me', text: v, at: nowIso() }).catch(writeFailed); renderChat(); setTimeout(renderChat, 301000); return; }
     const items = attPending; attPending = []; renderTray();
     let i = 0;
     try {   // 첨부 하나당 글 하나, 쓴 글은 첫 첨부에 같이
       for (; i < items.length; i++) {
         toast('올리는 중… ' + (i + 1) + '/' + items.length);
         const f = items[i].file, extra = isPic(f) ? { img: await upImage(f) } : { file: await upFile(f) };
-        await append('chat_' + viewDate, Object.assign({ id: uid(), from: 'me', text: i ? '' : v, at: nowIso() }, extra));
+        await append('chat_' + cd, Object.assign({ id: uid(), from: 'me', text: i ? '' : v, at: nowIso() }, extra));
         if (items[i].url) URL.revokeObjectURL(items[i].url);
       }
       toast('보냄'); openDock(); renderChat(); setTimeout(renderChat, 301000);
@@ -1031,15 +1037,14 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       checks = { done: { ...((v && v.done) || {}) }, notes: { ...((v && v.notes) || {}) }, result: { ...((v && v.result) || {}) } };
       renderTasks();
     });
-    subs.chat = subList('chat_' + date, (l) => { if (date !== viewDate) return; chatMsgs = l.slice().sort((a, b) => String(a.at).localeCompare(String(b.at))); if (seenReplies < 0) seenReplies = replyCount(); renderChat(); });   // 처음 읽은 답은 '새 답'으로 안 셈
+    subs.chat = subList('chat_' + kstToday(), (l) => { if (date !== viewDate) return; chatMsgs = l.slice().sort((a, b) => String(a.at).localeCompare(String(b.at))); if (seenReplies < 0) seenReplies = replyCount(); renderChat(); });   // 처음 읽은 답은 '새 답'으로 안 셈
     subs.cl = sub('cl_' + date, (v) => { if (date !== viewDate) return; cnotes = { ...((v && v.notes) || {}) }; renderTasks(); });
   }
   function go(date) {
     if (date !== viewDate) {
-      viewDate = date; canWrite = date === kstToday();   // 지난 판은 읽기만 (체크·메모·대화 안 됨)
+      viewDate = date; canWrite = date === kstToday();   // 지난 판은 읽기만 (체크·메모 안 됨) — 대화는 늘 오늘 대화
       document.body.classList.toggle('past', !canWrite);
       $('dLabel').textContent = canWrite ? '오늘 업무' : '지난 판 · 읽기만';
-      $('chatText').disabled = !canWrite; $('chatText').placeholder = canWrite ? '메모' : '지난 판은 읽기만 — 오늘로 가서 써 줘';
       watchDay();
     }
     showState(''); renderAll(); setDayNav();
@@ -1051,7 +1056,8 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     if (viewDate) sel.value = viewDate;
     const i = dates.indexOf(viewDate);
     $('prevDay').disabled = i < 0 || i >= dates.length - 1; $('nextDay').disabled = i <= 0;
-    $('toToday').hidden = viewDate === kstToday() || !dates.includes(kstToday());
+    $('toToday').hidden = !dates.includes(kstToday());
+    $('toToday').style.visibility = viewDate === kstToday() ? 'hidden' : '';   // 오늘이면 안 보이게만 — 자리는 남겨서 ‹ › 위치가 안 바뀜 (사용자 11/2 "오늘 버튼이 생기면 좌우 버튼 위치가 바뀌어서 연속으로 못 눌러")
   }
   function renderAll() {
     const d = dayDoc;
@@ -1161,7 +1167,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     // 끌어다 놓기 (사용자 10/30 "파일 드래그로도 첨부되게") : 창 어디에 놓아도 메모에 첨부, 여러 개면 하나씩 차례로
     let dragN = 0;
     const hasFiles = (e) => Array.from((e.dataTransfer && e.dataTransfer.types) || []).includes('Files');
-    const dropOn = () => canWrite && !!viewDate;
+    const dropOn = () => true;   // 첨부도 늘 오늘 대화로
     window.addEventListener('dragenter', (e) => { if (!hasFiles(e) || !dropOn()) return; e.preventDefault(); dragN++; $('drop').hidden = false; });
     window.addEventListener('dragover', (e) => { if (!hasFiles(e)) return; e.preventDefault(); e.dataTransfer.dropEffect = dropOn() ? 'copy' : 'none'; });
     window.addEventListener('dragleave', (e) => { if (!hasFiles(e)) return; if (--dragN <= 0) { dragN = 0; $('drop').hidden = true; } });
