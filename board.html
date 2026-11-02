@@ -224,6 +224,12 @@ h3.s-title{padding-left:12px;border-left:4px solid var(--sc)}
 .dday.soon{color:var(--amber);background:color-mix(in srgb,var(--amber) 13%,transparent)}
 #ongoing .dday{color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent)}
 .ev.hi .dday{color:var(--amber);background:color-mix(in srgb,var(--amber) 14%,transparent)}
+/* 정기 업무는 다가오는 일정과 칸을 나눔 (사용자 11/2 "일정이랑 정기업무 구분이 안 된다" → "구분이 너무 약해") — 청록 띠·제목·날짜표 + 더 어두운 칸 + 점선 테두리 */
+.sec.sec-reg{--surface:#282D34;border:1px dashed color-mix(in srgb,var(--c2) 55%,var(--line));border-left:6px solid var(--c2)}
+.sec-reg .plate{color:var(--c2)}
+.sec-reg .dday,.sec-reg .ev.hi .dday{color:var(--c2);background:color-mix(in srgb,var(--c2) 15%,transparent)}
+.sec-reg .when .d{color:var(--c2)}
+.sec-reg .what .t{color:var(--ink-2);font-weight:500}
 .sub{font-size:12.5px;font-weight:700;letter-spacing:.02em;color:var(--muted);margin:14px 0 0}
 .sec-h+.sub{margin-top:0}
 .what{display:flex;flex-direction:column;gap:3px;min-width:0}
@@ -285,6 +291,12 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
 .msg .at{display:block;margin-top:3px;font-size:11px;font-variant-numeric:tabular-nums;opacity:.65}
 .typing{align-self:flex-start;font-size:13px;color:var(--muted)}
 .chat-form{display:flex;gap:8px;align-items:flex-end}
+/* 붙인 사진·파일은 바로 안 보내고 여기 대기 → '등록' 때 글이랑 같이 (사용자 11/2 "사진 붙여 넣기 하면 바로 전송되는 거 아니라 채팅하고 같이 보낼 수 있게") */
+.att-tray{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.att-chip{display:flex;align-items:center;gap:8px;max-width:240px;padding:4px 6px 4px 4px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font-size:12.5px;color:var(--ink-2)}
+.att-chip img{width:44px;height:44px;object-fit:cover;border-radius:7px;flex:none}
+.att-chip .ac-n{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:4px}
+.att-chip button{flex:none;width:24px;height:24px;border:0;border-radius:50%;background:var(--sunken);color:var(--ink);font-size:15px;line-height:1;cursor:pointer}
 .chat-form .lamp{align-self:center;margin:0 4px}
 .chat-form textarea{flex:1;height:42px;min-height:42px;max-height:140px;resize:none;overflow-y:hidden;padding:10px 12px;border-radius:12px;background:var(--surface)}
 /* 사진 붙이기 (사용자 10/29) */
@@ -367,7 +379,8 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
 
       <div class="col inputs c-sched">
         <section class="sec"><div class="sec-h"><h2 class="plate">진행 중 일정</h2></div><ol class="timeline" id="ongoing"></ol></section>
-        <section class="sec"><div class="sec-h"><h2 class="plate">다가오는 일정</h2></div><div class="sub">일정</div><ol class="timeline" id="upcoming"></ol><div class="sub">정기 업무</div><ol class="timeline" id="upRegular"></ol></section>
+        <section class="sec"><div class="sec-h"><h2 class="plate">다가오는 일정</h2></div><ol class="timeline" id="upcoming"></ol></section>
+        <section class="sec sec-reg"><div class="sec-h"><h2 class="plate">정기 업무</h2><span class="aside k">매달·매주 반복</span></div><ol class="timeline" id="upRegular"></ol></section>
         <section class="sec"><div class="sec-h"><h2 class="plate">회의 때 말할 것</h2></div><ul class="say" id="meeting"></ul></section>
         <section class="sec">
           <div class="sec-h"><h2 class="plate">내일 TBM</h2><span class="aside"><label for="tbmDate" class="k">날짜</label><input type="date" id="tbmDate"></span></div>
@@ -388,6 +401,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
           <div class="dock-h"><h2 class="plate">메모</h2><span class="aside" id="chatState"><span class="lamp"></span><span>연결 확인 중</span></span><button class="x" id="dockClose" type="button" aria-label="접기">×</button></div>
           <div class="msgs" id="msgs" aria-live="polite"></div>
         </div>
+        <div class="att-tray" id="attTray" hidden></div>
         <form class="chat-form" id="chatForm" autocomplete="off">
           <span class="lamp" id="dockLamp"></span>
           <textarea id="chatText" rows="1" maxlength="2000" placeholder="메모" aria-label="메모"></textarea>
@@ -730,7 +744,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   async function shrink(file) {
     const url = URL.createObjectURL(file);
     try {
-      const img = new Image(); img.src = url; await img.decode();
+      const img = new Image(); await new Promise((res, rej) => { img.onload = res; img.onerror = () => rej(new Error('img')); img.src = url; });   // decode()는 화면이 안 그려질 때 멈춤 (11/2 시험에서 확인) → onload
       for (const [side, q] of [[1600, 0.82], [1600, 0.7], [1280, 0.7], [1024, 0.65]]) {
         const k = Math.min(1, side / Math.max(img.naturalWidth, img.naturalHeight));
         const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
@@ -741,19 +755,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       throw new Error('too big');
     } finally { URL.revokeObjectURL(url); }
   }
-  async function sendImage(file) {
-    if (!file || !canWrite || !viewDate) return;
-    toast('사진 올리는 중…');
-    try {
-      const imgId = uid();
-      await ref('img_' + imgId).set({ v: await encBytes(await shrink(file)) });
-      const v = $('chatText').value.trim(); $('chatText').value = ''; growChat();
-      waitingSince = Date.now();
-      await append('chat_' + viewDate, { id: uid(), from: 'me', text: v, img: imgId, at: nowIso() });
-      toast('사진 보냄'); openDock(); renderChat();
-      setTimeout(renderChat, 301000);
-    } catch (e) { toast('사진을 못 올렸어 · 다시 해 줘'); }
-  }
+  async function upImage(file) { const imgId = uid(); await ref('img_' + imgId).set({ v: await encBytes(await shrink(file)) }); return imgId; }
   const imgUrls = new Map();   // 사진 id → 풀어 둔 주소 (한 번만 받음)
   function loadImg(imgId) {
     if (!imgUrls.has(imgId)) imgUrls.set(imgId, ref('img_' + imgId).get().then(async (s) => {
@@ -773,19 +775,29 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   // 판 → PC : 감시 프로그램이 업무판/받은 파일/ 에 저장, PC → 판 : board.py send-file (사용자 10/29 "보드 채팅창으로 파일도 주고받을 수 있게, 메일로 왔다 갔다 할 필요 없이")
   const PART = 600000, FMAX = 15 * 1024 * 1024;
   const kb = (n) => n < 1048576 ? Math.max(1, Math.round(n / 1024)) + 'KB' : (n / 1048576).toFixed(1) + 'MB';
-  function attach(file) { if (!file) return; return file.type.startsWith('image/') && !/gif|svg/.test(file.type) ? sendImage(file) : sendFile(file); }
-  async function sendFile(file) {
+  const isPic = (f) => f.type.startsWith('image/') && !/gif|svg/.test(f.type);
+  let attPending = [];   // 붙여 놓고 아직 안 보낸 사진·파일 → '등록' 때 글이랑 같이
+  function attach(file) {
     if (!file || !canWrite || !viewDate) return;
-    if (file.size > FMAX) { toast('15MB까지만 돼 · 더 크면 메일로'); return; }
-    try {
-      const id = uid(), u8 = new Uint8Array(await file.arrayBuffer()), n = Math.max(1, Math.ceil(u8.length / PART));
-      for (let i = 0; i < n; i++) { toast('파일 올리는 중… ' + (i + 1) + '/' + n); await ref('fil_' + id + '_' + i).set({ v: await encBytes(u8.subarray(i * PART, (i + 1) * PART)) }); }
-      const v = $('chatText').value.trim(); $('chatText').value = ''; growChat();
-      waitingSince = Date.now();
-      await append('chat_' + viewDate, { id: uid(), from: 'me', text: v, file: { id, name: file.name || '파일', size: file.size, type: file.type || '', n }, at: nowIso() });
-      toast('파일 보냄'); openDock(); renderChat();
-      setTimeout(renderChat, 301000);
-    } catch (e) { toast('파일을 못 올렸어 · 다시 해 줘'); }
+    if (!isPic(file) && file.size > FMAX) { toast('15MB까지만 돼 · 더 크면 메일로'); return; }
+    attPending.push({ file, url: isPic(file) ? URL.createObjectURL(file) : '' }); renderTray();
+    $('chatText').focus();
+  }
+  function renderTray() {
+    const t = $('attTray'); t.replaceChildren(); t.hidden = !attPending.length;
+    attPending.forEach((p, i) => {
+      const c = el('div', 'att-chip');
+      if (p.url) { const im = el('img'); im.src = p.url; im.alt = ''; c.append(im); }
+      c.append(el('span', 'ac-n', p.url ? '사진' : p.file.name || '파일'));
+      const x = el('button', null, '×'); x.type = 'button'; x.setAttribute('aria-label', '빼기');
+      x.addEventListener('click', () => { if (p.url) URL.revokeObjectURL(p.url); attPending.splice(i, 1); renderTray(); });
+      c.append(x); t.append(c);
+    });
+  }
+  async function upFile(file) {
+    const id = uid(), u8 = new Uint8Array(await file.arrayBuffer()), n = Math.max(1, Math.ceil(u8.length / PART));
+    for (let i = 0; i < n; i++) { if (n > 1) toast('파일 올리는 중… ' + (i + 1) + '/' + n); await ref('fil_' + id + '_' + i).set({ v: await encBytes(u8.subarray(i * PART, (i + 1) * PART)) }); }
+    return { id, name: file.name || '파일', size: file.size, type: file.type || '', n };
   }
   async function getFile(f, btn) {
     const st = btn.querySelector('.af-s'), was = st.textContent;
@@ -809,14 +821,23 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     b.addEventListener('click', () => getFile(f, b));
     return b;
   }
-  function sendChat() {
+  async function sendChat() {
     const v = $('chatText').value.trim();
-    if (!v || !canWrite || !viewDate) return;
+    if ((!v && !attPending.length) || !canWrite || !viewDate) return;
     $('chatText').value = ''; growChat();
     waitingSince = Date.now();
-    append('chat_' + viewDate, { id: uid(), from: 'me', text: v, at: nowIso() }).catch(writeFailed);
-    renderChat();
-    setTimeout(renderChat, 301000);
+    if (!attPending.length) { append('chat_' + viewDate, { id: uid(), from: 'me', text: v, at: nowIso() }).catch(writeFailed); renderChat(); setTimeout(renderChat, 301000); return; }
+    const items = attPending; attPending = []; renderTray();
+    let i = 0;
+    try {   // 첨부 하나당 글 하나, 쓴 글은 첫 첨부에 같이
+      for (; i < items.length; i++) {
+        toast('올리는 중… ' + (i + 1) + '/' + items.length);
+        const f = items[i].file, extra = isPic(f) ? { img: await upImage(f) } : { file: await upFile(f) };
+        await append('chat_' + viewDate, Object.assign({ id: uid(), from: 'me', text: i ? '' : v, at: nowIso() }, extra));
+        if (items[i].url) URL.revokeObjectURL(items[i].url);
+      }
+      toast('보냄'); openDock(); renderChat(); setTimeout(renderChat, 301000);
+    } catch (e) { attPending = items.slice(i).concat(attPending); renderTray(); if (!i && v && !$('chatText').value) $('chatText').value = v; toast('못 올렸어 · 다시 등록 눌러 줘'); }   // 이미 간 건 빼고 남은 것만 다시
   }
 
   // 내일 TBM
