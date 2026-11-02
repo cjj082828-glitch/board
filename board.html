@@ -42,7 +42,7 @@ h1 .w{color:var(--muted);font-weight:500}
 .progress .num{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 .progress .lbl{font-size:12.5px;color:var(--muted)}
 .bar{grid-column:1/-1;height:6px;border-radius:999px;background:var(--sunken);overflow:hidden}
-.bar i{display:block;height:100%;width:0;border-radius:inherit;background:var(--accent);transition:width .3s ease}
+.bar i{display:block;height:100%;width:0;border-radius:inherit;background:#FF5A5A;transition:width .3s ease}   /* 체크 게이지 = 오늘 업무 빨강 (사용자 11/2 "위에 체크란 게이지도") */
 .nav{display:flex;gap:6px}
 .btn{min-width:36px;height:36px;padding:0 14px;border:1px solid var(--line);border-radius:var(--r-ctl);background:var(--surface);font-size:14px;font-weight:600;cursor:pointer}
 .btn:hover:not(:disabled){border-color:color-mix(in srgb,var(--ink-2) 45%,var(--line))}
@@ -60,9 +60,9 @@ h1 .w{color:var(--muted);font-weight:500}
 @keyframes ptrSpin{to{transform:rotate(360deg)}}
 .seg{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
 .tab{height:34px;padding:0 14px;border:0;border-radius:9px;background:none;color:var(--ink-2);font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
-.tab[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.tab[aria-selected="true"]{background:#FF5A5A;color:#1C0A0A}   /* 맨 위 탭(오늘 업무·보고서·자료실) 고른 것 = 오늘 업무 칸 빨강 (사용자 11/2 "맨 위 탭도 색 오늘 업무랑 같게") */
 .tab-n{font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;background:var(--sunken);color:var(--ink-2)}
-.tab[aria-selected="true"] .tab-n{background:color-mix(in srgb,var(--accent-ink) 16%,transparent);color:var(--accent-ink)}
+.tab[aria-selected="true"] .tab-n{background:color-mix(in srgb,#1C0A0A 16%,transparent);color:#1C0A0A}
 .daynav{display:flex;align-items:center;gap:6px}   /* 지난 판 보기 (사용자 11/2 "그전 것도 보이게 하자") — 지난 날은 읽기만 */
 .daynav select{height:34px;padding:0 8px;border:1px solid var(--line);border-radius:var(--r-ctl);background:var(--surface);color:var(--ink);font:inherit;font-size:13.5px}
 .daynav .btn{height:34px;padding:0 10px}
@@ -188,6 +188,7 @@ h3.s-title{padding-left:12px;border-left:4px solid var(--sc)}
 .row input[type=checkbox]{appearance:none;-webkit-appearance:none;flex:none;width:20px;height:20px;margin:2px 0 0;border:1.5px solid color-mix(in srgb,var(--ink-2) 55%,var(--line));border-radius:6px;background-color:var(--surface);cursor:pointer}
 .row input[type=checkbox]:checked{border-color:var(--accent);background:var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5 10.5l3.2 3.2L15 6.8' fill='none' stroke='%23101318' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/17px no-repeat}
 .row input[type=checkbox]:disabled{cursor:default;opacity:.6}
+.sec.kk .row input[type=checkbox]:checked{border-color:var(--k);background-color:var(--k)}   /* 체크 색 = 그 칸 띠 색 (사용자 11/2 "체크 색도 그 칸에 맞게끔") — 불이행(빨강)은 아래 .jd.ng 가 이김 */
 .body{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
 .t{font-weight:600;color:var(--ink);overflow-wrap:anywhere}
 .n{font-size:13.5px;color:var(--ink-2);overflow-wrap:anywhere}
