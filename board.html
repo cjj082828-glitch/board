@@ -110,6 +110,21 @@ body:not([data-tab="file"]) #filePage{display:none!important}
 .deck-h{display:flex;align-items:center;gap:12px;min-width:0}
 .deck-t{font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .deck-n{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.btn.del{color:var(--red)}
+.btn.sm{height:30px;padding:0 12px;font-size:13px}
+#repSel{margin-left:auto}
+#repSel:not([hidden]) ~ .out{margin-left:0}
+body:not([data-tab="rep"]) #repSel,body:not([data-tab="rep"]) #repSelDel{display:none!important}
+.rep-item{position:relative;display:flex;min-width:0}
+.rep-item>.rep-card{flex:1;padding-right:72px}
+.rep-x{position:absolute;top:10px;right:10px;height:28px;padding:0 10px;border:1px solid #D5DCE5;border-radius:8px;background:#FFFFFF;color:#B8323C;font-size:12.5px;font-weight:700;cursor:pointer}
+.rep-x:hover{border-color:#B8323C}
+.rep-x.arm{background:#B8323C;border-color:#B8323C;color:#FFFFFF}
+.rep-item.sel-mode>.rep-card{padding-left:52px;padding-right:18px}
+.rep-ck{position:absolute;left:16px;top:16px;width:24px;height:24px;border:2px solid #5F6A7D;border-radius:6px;background:#FFFFFF;display:grid;place-items:center;font-size:14px;font-weight:800;color:#FFFFFF;pointer-events:none}
+.rep-item.on .rep-ck{background:#1A64C4;border-color:#1A64C4}
+.rep-item.on>.rep-card{outline:3px solid #1A64C4;outline-offset:-1px}
+.btn.del.arm{background:var(--red);border-color:var(--red);color:var(--accent-ink)}
 .slide{display:flex;flex-direction:column;gap:16px;padding:clamp(18px,3.4vw,40px);border:1px solid var(--line);border-top:5px solid var(--sc,var(--c1));border-radius:16px;background:var(--surface);min-height:340px;overflow:auto;touch-action:pan-y;user-select:none}
 .slide.k-title .s-title{font-size:clamp(24px,3.4vw,42px)}
 @media (min-width:880px){.slide{aspect-ratio:16/9;min-height:0}}
@@ -348,6 +363,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
 
   <nav class="tabs" id="tabs" hidden>
     <div class="seg" role="tablist" aria-label="페이지"><button class="tab" role="tab" id="tabDay" type="button" aria-selected="true">오늘 업무</button><button class="tab" role="tab" id="tabRep" type="button" aria-selected="false">보고서<span class="tab-n" id="repCount" hidden></span></button><button class="tab" role="tab" id="tabFile" type="button" aria-selected="false">자료실<span class="tab-n" id="fileCount" hidden></span></button></div>
+    <button class="btn sm" id="repSel" type="button" hidden>선택 삭제</button><button class="btn sm del" id="repSelDel" type="button" hidden disabled>골라 줘</button>
     <button class="out" id="logout" type="button">로그아웃</button>
   </nav>
 
@@ -365,7 +381,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   <section class="reports" id="repPage">
     <div class="rep-list" id="repList"></div>
     <div class="deck" id="deck" hidden>
-      <div class="deck-h"><button class="btn" id="deckBack" type="button">‹ 목록</button><div class="deck-t" id="deckTitle"></div><span class="deck-n" id="deckNum"></span><div class="seg mode" role="group" aria-label="보는 방식"><button class="tab" id="modeScroll" type="button" aria-pressed="true">쭉 보기</button><button class="tab" id="modeOne" type="button" aria-pressed="false">한 장씩</button></div><button class="btn" id="deckPdf" type="button" title="이 보고서를 PDF로 내려받기">PDF</button></div>
+      <div class="deck-h"><button class="btn" id="deckBack" type="button">‹ 목록</button><div class="deck-t" id="deckTitle"></div><span class="deck-n" id="deckNum"></span><div class="seg mode" role="group" aria-label="보는 방식"><button class="tab" id="modeScroll" type="button" aria-pressed="true">쭉 보기</button><button class="tab" id="modeOne" type="button" aria-pressed="false">한 장씩</button></div><button class="btn" id="deckPdf" type="button" title="이 보고서를 PDF로 내려받기">PDF</button><button class="btn del" id="deckDel" type="button" title="이 보고서 지우기 (한 번 더 눌러야 지워짐)">삭제</button></div>
       <div class="slides" id="slides"></div>
       <div class="slide" id="slide" hidden></div>
       <div class="deck-nav" id="deckNav" hidden><button class="btn" id="prevSlide" type="button" aria-label="이전 장">‹</button><div class="dots" id="dots"></div><button class="btn" id="nextSlide" type="button" aria-label="다음 장">›</button></div>
@@ -949,15 +965,46 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     if (repOpen) { renderDeck(); return; }
     $('deck').hidden = true;
     const box = $('repList'); box.hidden = false; box.replaceChildren();
-    if (!repIndex.length) { box.append(el('p', 'rep-empty', '아직 올린 보고서가 없어. 정리해 달라고 하면 여기에 올려둘게.')); return; }
+    if (!repIndex.length) { selMode = false; sel.clear(); selBar(); box.append(el('p', 'rep-empty', '아직 올린 보고서가 없어. 정리해 달라고 하면 여기에 올려둘게.')); return; }
     repIndex.forEach((r, i) => {
+      const id = String(r.id), w = el('div', 'rep-item' + (selMode ? ' sel-mode' : '') + (sel.has(id) ? ' on' : ''));
       const b = el('button', 'rep-card'); b.type = 'button'; b.style.setProperty('--k', CK(i));
       b.append(el('span', 'rep-date', isDate(r.date) ? md(r.date) + ' (' + dow(r.date) + ')' : ''), el('span', 'rep-t', r.title || ''));
       if (r.sub) b.append(el('span', 'rep-s', r.sub));
       if (r.slides) b.append(el('span', 'rep-n', r.slides + '장'));
-      b.addEventListener('click', () => openReport(String(r.id)));
-      box.append(b);
+      b.addEventListener('click', () => { if (!selMode) return openReport(id); if (sel.has(id)) sel.delete(id); else sel.add(id); renderReports(); });
+      w.append(b);
+      if (selMode) { const ck = el('span', 'rep-ck'); ck.textContent = sel.has(id) ? '✓' : ''; w.append(ck); }
+      else { const x = el('button', 'rep-x'); x.type = 'button'; x.textContent = '삭제'; x.title = '이 보고서 지우기 (한 번 더 눌러야 지워짐)'; x.addEventListener('click', (e) => { e.stopPropagation(); armDelete(x, [id], '삭제?', '삭제'); }); w.append(x); }
+      box.append(w);
     });
+    selBar();
+  }
+  // 보고서 지우기 (사용자 11/3 "보고서 삭제 버튼도", "목록에서 칸 우상단에 삭제 버튼, 로그아웃 왼쪽에 다중 삭제 — 누르고 체크하고 삭제") : 모두 두 번 눌러야 지움 (첫 번째는 4초 동안 '정말?')
+  let selMode = false;
+  const sel = new Set();
+  function selBar() {
+    const list = !repOpen && repIndex.length > 0, a = $('repSel'), d = $('repSelDel');
+    a.hidden = !list; d.hidden = !list || !selMode;
+    a.textContent = selMode ? '취소' : '선택 삭제';
+    if (!d.dataset.arm) { d.disabled = !sel.size; d.textContent = sel.size ? sel.size + '개 삭제' : '골라 줘'; }
+  }
+  function armDelete(btn, ids, label, idle) {
+    if (btn.dataset.arm) { clearTimeout(+btn.dataset.arm); delete btn.dataset.arm; btn.classList.remove('arm'); return doDelete(ids, btn); }
+    btn.dataset.arm = String(setTimeout(() => { delete btn.dataset.arm; btn.classList.remove('arm'); btn.textContent = idle; selBar(); }, 4000));
+    btn.classList.add('arm'); btn.textContent = label;
+  }
+  async function doDelete(ids, btn) {
+    const set = new Set(ids.map(String));
+    if (btn) { btn.disabled = true; btn.textContent = '지우는 중…'; }
+    try {
+      await put('rep_index', { list: repIndex.filter((r) => !set.has(String(r.id))) });
+      for (const id of set) { try { await ref('rep_' + id).delete(); } catch (e) {} }   // 목록에서 빠지면 안 보임 — 문서 삭제가 막혀도 목록 기준
+      repIndex = repIndex.filter((r) => !set.has(String(r.id))); sel.clear(); selMode = false;
+      if (repOpen && set.has(String(repOpen))) closeReport(); else renderReports();
+      toast(set.size > 1 ? set.size + '개 지움' : '보고서 지움');
+    } catch (e) { writeFailed(); }
+    finally { if (btn) { btn.disabled = false; btn.textContent = btn.id === 'deckDel' ? '삭제' : btn.textContent; } selBar(); }
   }
   function openReport(id) {
     repOpen = id; repDoc = null; slideAt = 0;
@@ -996,8 +1043,9 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     } catch (e) { toast('PDF 못 만듦 — ' + (e && e.message || e)); }
     finally { box.remove(); b.disabled = false; b.textContent = 'PDF'; }
   }
+  function delReport() { if (repOpen) armDelete($('deckDel'), [repOpen], '정말 삭제?', '삭제'); }
   function renderDeck() {
-    $('repList').hidden = true; $('deck').hidden = false;
+    $('repList').hidden = true; $('deck').hidden = false; selBar();
     const sl = arr(repDoc && repDoc.slides);
     slideAt = Math.max(0, Math.min(slideAt, sl.length - 1));
     $('deckTitle').textContent = (repDoc && repDoc.title) || '불러오는 중…';
@@ -1175,6 +1223,9 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     $('modeScroll').addEventListener('click', () => setMode('scroll'));
     $('modeOne').addEventListener('click', () => setMode('one'));
     $('deckPdf').addEventListener('click', savePdf);
+    $('deckDel').addEventListener('click', delReport);
+    $('repSel').addEventListener('click', () => { selMode = !selMode; sel.clear(); renderReports(); });
+    $('repSelDel').addEventListener('click', () => { if (sel.size) armDelete($('repSelDel'), [...sel], '정말 ' + sel.size + '개 삭제?', sel.size + '개 삭제'); });
     $('prevSlide').addEventListener('click', () => { slideAt--; renderDeck(); });
     $('nextSlide').addEventListener('click', () => { slideAt++; renderDeck(); });
     document.addEventListener('keydown', (e) => {
