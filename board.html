@@ -365,7 +365,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   <section class="reports" id="repPage">
     <div class="rep-list" id="repList"></div>
     <div class="deck" id="deck" hidden>
-      <div class="deck-h"><button class="btn" id="deckBack" type="button">‹ 목록</button><div class="deck-t" id="deckTitle"></div><span class="deck-n" id="deckNum"></span><div class="seg mode" role="group" aria-label="보는 방식"><button class="tab" id="modeScroll" type="button" aria-pressed="true">쭉 보기</button><button class="tab" id="modeOne" type="button" aria-pressed="false">한 장씩</button></div></div>
+      <div class="deck-h"><button class="btn" id="deckBack" type="button">‹ 목록</button><div class="deck-t" id="deckTitle"></div><span class="deck-n" id="deckNum"></span><div class="seg mode" role="group" aria-label="보는 방식"><button class="tab" id="modeScroll" type="button" aria-pressed="true">쭉 보기</button><button class="tab" id="modeOne" type="button" aria-pressed="false">한 장씩</button></div><button class="btn" id="deckPdf" type="button" title="이 보고서를 PDF로 내려받기">PDF</button></div>
       <div class="slides" id="slides"></div>
       <div class="slide" id="slide" hidden></div>
       <div class="deck-nav" id="deckNav" hidden><button class="btn" id="prevSlide" type="button" aria-label="이전 장">‹</button><div class="dots" id="dots"></div><button class="btn" id="nextSlide" type="button" aria-label="다음 장">›</button></div>
@@ -966,6 +966,36 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     renderDeck();
   }
   function closeReport() { repOpen = null; repDoc = null; if (subs.rep) { subs.rep(); subs.rep = null; } renderReports(); }
+  // 보고서 PDF 내려받기 (사용자 11/3 "보고서에서 보고 바로 PDF로 내려받을 수 있게 버튼") : 누를 때만 html2canvas·jsPDF 불러와 한 장씩 그려 A4 가로 폭(297mm) 쪽으로
+  const loadJs = (src) => new Promise((ok, no) => { if (document.querySelector('script[src="' + src + '"]')) return ok(); const t = document.createElement('script'); t.src = src; t.onload = ok; t.onerror = () => no(new Error('불러오기 실패')); document.head.append(t); });
+  // html2canvas 1.4.1은 color-mix()가 계산된 'color(srgb …)'를 못 읽음 → 복제본에 rgb()로 바꿔 넣음
+  const srgb = (v) => v.replace(/color\(srgb ([\d.e-]+) ([\d.e-]+) ([\d.e-]+)(?: \/ ([\d.e-]+))?\)/g, (_, r, g, b, a) => 'rgba(' + [r, g, b].map((x) => Math.round(Math.min(1, Math.max(0, +x)) * 255)).join(',') + ',' + (a === undefined ? 1 : +a) + ')');
+  function rgbOnly(src, cl) {
+    const a = [src, ...src.querySelectorAll('*')], b = [cl, ...cl.querySelectorAll('*')];
+    a.forEach((n, i) => { const cs = getComputedStyle(n), t = b[i]; if (!t) return; for (let j = 0; j < cs.length; j++) { const k = cs[j], v = cs.getPropertyValue(k); if (v.includes('color(')) t.style.setProperty(k, srgb(v)); } });
+  }
+  async function savePdf() {
+    const sl = arr(repDoc && repDoc.slides), b = $('deckPdf');
+    if (!sl.length || b.disabled) return;
+    b.disabled = true; b.textContent = 'PDF 만드는 중…';
+    const box = el('div'); box.style.cssText = 'position:fixed;left:-20000px;top:0;width:1280px;display:flex;flex-direction:column;gap:0';
+    try {
+      await loadJs('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+      await loadJs('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+      document.body.append(box);
+      const pages = sl.map((x, i) => { const s = el('div'); paintSlide(s, x, i); s.append(...slideBody(x), el('div', 's-pg', (i + 1) + ' / ' + sl.length)); s.style.cssText += ';aspect-ratio:auto;min-height:720px;height:auto;overflow:visible;border-radius:0'; box.append(s); return s; });
+      if (document.fonts && document.fonts.ready) await document.fonts.ready;
+      let pdf = null;
+      for (const s of pages) {
+        const c = await window.html2canvas(s, { scale: 2, backgroundColor: '#FFFFFF', logging: false, onclone: (_, cl) => rgbOnly(s, cl) });
+        const w = 297, h = w * c.height / c.width;
+        if (!pdf) pdf = new window.jspdf.jsPDF({ orientation: h > w ? 'p' : 'l', unit: 'mm', format: [w, h] }); else pdf.addPage([w, h], h > w ? 'p' : 'l');
+        pdf.addImage(c.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, w, h);
+      }
+      pdf.save('부산메리츠타워_' + String((repDoc && repDoc.title) || '보고서').replace(/[\\/:*?"<>|]/g, ' ').trim() + '.pdf');
+    } catch (e) { toast('PDF 못 만듦 — ' + (e && e.message || e)); }
+    finally { box.remove(); b.disabled = false; b.textContent = 'PDF'; }
+  }
   function renderDeck() {
     $('repList').hidden = true; $('deck').hidden = false;
     const sl = arr(repDoc && repDoc.slides);
@@ -1144,6 +1174,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     $('deckBack').addEventListener('click', closeReport);
     $('modeScroll').addEventListener('click', () => setMode('scroll'));
     $('modeOne').addEventListener('click', () => setMode('one'));
+    $('deckPdf').addEventListener('click', savePdf);
     $('prevSlide').addEventListener('click', () => { slideAt--; renderDeck(); });
     $('nextSlide').addEventListener('click', () => { slideAt++; renderDeck(); });
     document.addEventListener('keydown', (e) => {
