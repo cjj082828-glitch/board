@@ -317,6 +317,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
 .msg.claude{align-self:flex-start;background:var(--surface);border:1px solid var(--line);border-bottom-left-radius:4px}
 .msg.sys{align-self:center;max-width:100%;padding:0 4px;color:var(--muted);font-size:12.5px;text-align:center}
 .msg .at{display:block;margin-top:3px;font-size:11px;font-variant-numeric:tabular-nums;opacity:.65}
+.msg .cp{margin-left:8px;padding:1px 8px;border:1px solid var(--line);border-radius:999px;background:transparent;color:inherit;font:inherit;font-size:11px;cursor:pointer}
 .typing{align-self:flex-start;font-size:13px;color:var(--muted)}
 .chat-form{display:flex;gap:8px;align-items:flex-end}
 /* 붙인 사진·파일은 바로 안 보내고 여기 대기 → '등록' 때 글이랑 같이 (사용자 11/2 "사진 붙여 넣기 하면 바로 전송되는 거 아니라 채팅하고 같이 보낼 수 있게") */
@@ -742,6 +743,29 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   function openDock() { if (dockOpen()) return; $('dockPanel').hidden = false; seenReplies = replyCount(); paintNew(); const b = $('msgs'); b.scrollTop = b.scrollHeight; }
   function closeDock() { $('dockPanel').hidden = true; }
   function growChat() { const x = $('chatText'); x.style.height = 'auto'; x.style.height = Math.min(Math.max(x.scrollHeight, 42), 140) + 'px'; x.style.overflowY = x.scrollHeight > 140 ? 'auto' : 'hidden'; }
+  // 글 복사 : 화면 줄바꿈(pre-wrap)은 메일 편집기에 붙이면 일부가 띄어쓰기로 바뀜 → 줄바꿈을 <br>로 넣어 복사, ** 표시는 뺌 (사용자 11/4 "복사 붙여넣기 하니 줄바꿈 없이 들어가냐", "방법 없나")
+  function copyBtn(text) {
+    const b = el('button', 'cp', '복사'); b.type = 'button';
+    b.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const t = String(text).replace(/\*\*/g, '');
+      const html = '<div>' + t.split('\n').map((l) => l.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')).join('<br>') + '</div>';
+      let ok = false;
+      try {
+        await navigator.clipboard.write([new ClipboardItem({ 'text/plain': new Blob([t], { type: 'text/plain' }), 'text/html': new Blob([html], { type: 'text/html' }) })]);
+        ok = true;
+      } catch (err) {
+        try { await navigator.clipboard.writeText(t); ok = true; } catch (err2) {
+          const x = document.createElement('textarea'); x.value = t; document.body.append(x); x.select();
+          try { ok = document.execCommand('copy'); } catch (err3) {}
+          x.remove();
+        }
+      }
+      b.textContent = ok ? '복사됨' : '복사 안 됨';
+      setTimeout(() => { b.textContent = '복사'; }, 1500);
+    });
+    return b;
+  }
   function renderChat() {
     const box = $('msgs');
     const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
@@ -753,7 +777,11 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       if (m.img) d.append(attImg(String(m.img)));
       if (m.file && m.file.id) d.append(attFile(m.file));
       d.append(document.createTextNode(m.text || ''));
-      if (cls !== 'sys') d.append(el('span', 'at', stamp(m.at).split(' ')[1] || ''));
+      if (cls !== 'sys') {
+        const at = el('span', 'at', stamp(m.at).split(' ')[1] || '');
+        if (cls === 'claude' && m.text) at.append(copyBtn(m.text));
+        d.append(at);
+      }
       box.append(d);
     }
     const replied = chatMsgs.some((m) => m.from === 'claude' && Date.parse(m.at) > waitingSince - 2000);
