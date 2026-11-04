@@ -199,6 +199,16 @@ h3.s-title{padding-left:12px;border-left:4px solid var(--sc)}
 .list{list-style:none;margin:0;padding:0}
 .item{border-bottom:1px solid var(--line)}
 .item:last-child{border-bottom:0}
+/* 한 공사 묶음 : 공사명 크게 + 아래 체크 줄 (사용자 11/4 "한 공사 건에 대한 내용이니까 공사명 크게 적고 아래 체크 행을 만드는 게 맞아 보여") */
+.grp{border-bottom:1px solid var(--line);padding:12px 0 4px}
+.grp:last-child{border-bottom:0}
+.grp-t{font-size:16px;font-weight:700;color:var(--ink);overflow-wrap:anywhere}
+.grp-t .chip{vertical-align:1px}
+.grp-n{margin-top:2px}
+.grp ul{list-style:none;margin:4px 0 0;padding:0 0 0 14px;border-left:2px solid var(--line)}
+.grp .item{border-bottom:1px dashed var(--line)}
+.grp .item:last-child{border-bottom:0}
+.grp .row{padding:9px 0}
 .row{display:flex;gap:12px;align-items:flex-start;padding:12px 0}
 .row input[type=checkbox]{appearance:none;-webkit-appearance:none;flex:none;width:20px;height:20px;margin:2px 0 0;border:1.5px solid color-mix(in srgb,var(--ink-2) 55%,var(--line));border-radius:6px;background-color:var(--surface);cursor:pointer}
 .row input[type=checkbox]:checked{border-color:var(--accent);background:var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5 10.5l3.2 3.2L15 6.8' fill='none' stroke='%23101318' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/17px no-repeat}
@@ -584,7 +594,23 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     const ul = $(id); ul.replaceChildren();
     const a = arr(items);
     if (!a.length) { ul.append(el('li', 'empty', '없음')); return; }
-    for (const it of a) ul.append(itemRow(it));
+    const seen = new Set();
+    for (const it of a) {
+      const g = it.group ? String(it.group) : '';
+      if (!g) { ul.append(itemRow(it)); continue; }
+      if (seen.has(g)) continue;                     // 같은 공사는 처음 나온 자리에 모아서
+      seen.add(g);
+      const mem = a.filter((x) => String(x.group || '') === g);
+      const li = el('li', 'grp'), head = el('div', 'grp-t', g);
+      if (mem.some((x) => x._must)) head.append(' ', el('span', 'chip must', '꼭'));
+      else if (mem.some((x) => x.pri === 'high')) head.append(' ', el('span', 'chip hi', '높음'));
+      li.append(head);
+      const gn = mem.find((x) => x.groupNote);
+      if (gn) { const n = noteEl(gn.groupNote); n.classList.add('grp-n'); li.append(n); }
+      const sub = el('ul');
+      for (const x of mem) sub.append(itemRow(Object.assign({}, x, { pri: x._must ? x.pri : '' })));   // 높음 표시는 공사명에만
+      li.append(sub); ul.append(li);
+    }
   }
   function itemRow(it) {
     const id = String(it.id || '');
