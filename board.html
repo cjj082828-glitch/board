@@ -329,6 +329,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
 .msg .at{display:block;margin-top:3px;font-size:11px;font-variant-numeric:tabular-nums;opacity:.65}
 .msg .cp{margin-left:8px;padding:1px 8px;border:1px solid var(--line);border-radius:999px;background:transparent;color:inherit;font:inherit;font-size:11px;cursor:pointer}
 .typing{align-self:flex-start;font-size:13px;color:var(--muted)}
+.daysep{align-self:center;margin:8px 0 2px;padding:1px 10px;border:1px solid var(--line);border-radius:999px;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
 .chat-form{display:flex;gap:8px;align-items:flex-end}
 /* 붙인 사진·파일은 바로 안 보내고 여기 대기 → '등록' 때 글이랑 같이 (사용자 11/2 "사진 붙여 넣기 하면 바로 전송되는 거 아니라 채팅하고 같이 보낼 수 있게") */
 .att-tray{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
@@ -535,12 +536,28 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       if (my === seq) cb(out);
     }, (e) => { if (e && e.code === 'permission-denied') return logout(); cb([]); });
   }
+  async function getList(name) {
+    const s = await ref(name).get(); const d = s.exists ? s.data() : null; const out = [];
+    for (const x of arr(d && d.m)) { const o = await dec(x); if (o) out.push(o); }
+    return out;
+  }
+  const CHAT_START = '2026-10-28';   // 판 대화 첫날
+  async function loadPast() {   // 첫날부터 어제까지 (주말·판 없는 날 대화도) 한 번씩만 읽어 위에 쌓음
+    const todo = [];
+    for (let d = CHAT_START; d < kstToday(); d = new Date(Date.parse(d + 'T00:00:00Z') + 86400000).toISOString().slice(0, 10)) if (!pastLoaded.has(d)) todo.push(d);
+    if (!todo.length) return;
+    todo.forEach((d) => pastLoaded.add(d));
+    const lists = await Promise.all(todo.map((d) => getList('chat_' + d).then((l) => l.map((m) => Object.assign({}, m, { day: d }))).catch(() => { pastLoaded.delete(d); return []; })));
+    pastMsgs = pastMsgs.concat(...lists).sort((a, b) => String(a.at).localeCompare(String(b.at)));
+    renderChat();
+  }
   async function put(name, obj) { await ref(name).set({ v: await enc(obj) }); }
   async function append(name, obj) { await ref(name).set({ m: firebase.firestore.FieldValue.arrayUnion(await enc(obj)) }, { merge: true }); }
 
   let canWrite = true;
   let dates = [], dayDoc = null, viewDate = null;
   let checks = { done: {}, notes: {}, result: {} }, chatMsgs = [], cnotes = {};
+  let pastMsgs = []; const pastLoaded = new Set();   // 지난 날 대화 (사용자 11/10 "그냥 계속 누적되게 못하나 대화창") — 저장은 그대로 날짜마다 chat_<날짜>
   let tbmDate = nextWorkday(kstToday()), tbmDirty = false, tbmDoc = null;
   let statusAt = 0, waitingSince = 0;
   const subs = {};
@@ -796,8 +813,14 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     const box = $('msgs');
     const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
     box.replaceChildren();
-    if (!chatMsgs.length) box.append(el('div', 'msg sys', '기록 없음'));
-    for (const m of chatMsgs) {
+    const all = pastMsgs.concat(chatMsgs.map((m) => Object.assign({}, m, { day: kstToday() })));
+    if (!all.length) box.append(el('div', 'msg sys', '기록 없음'));
+    let lastDay = '';
+    for (const m of all) {
+      if (m.day !== lastDay) {   // 날짜 줄
+        lastDay = m.day; const [y, mo, da] = m.day.split('-').map(Number);
+        box.append(el('div', 'daysep', md(m.day) + ' (' + '일월화수목금토'[new Date(Date.UTC(y, mo - 1, da)).getUTCDay()] + ')' + (m.day === kstToday() ? ' 오늘' : '')));
+      }
       const cls = m.from === 'claude' ? 'claude' : m.from === 'me' ? 'me' : 'sys';
       const d = el('div', 'msg ' + cls);
       if (m.img) d.append(attImg(String(m.img)));
@@ -1327,6 +1350,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     subs.index = sub('index', (v, exists) => {
       if (exists && v === undefined) { logout(); return; }   // 저장된 키가 안 맞으면 다시 로그인
       dates = arr(v && v.dates).filter(isDate).sort().reverse();
+      loadPast();
       if (viewDate && dates.includes(viewDate)) { go(viewDate); return; }   // 지난 판 보던 중이면 그대로
       if (!dates.includes(kstToday())) { setDayNav(); showState('오늘 업무가 아직 안 올라왔어. 아침 TBM 발송 뒤 채워져. (위에서 지난 판은 볼 수 있어)'); $('board').hidden = true; $('foot').hidden = true; return; }
       go(kstToday());
