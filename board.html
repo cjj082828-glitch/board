@@ -92,6 +92,10 @@ body:not([data-tab="file"]) #filePage{display:none!important}
 .fr-n small{font-weight:400;color:var(--muted);margin-left:8px}
 .fr-m{font-size:12.5px;color:var(--muted);white-space:nowrap}
 .fr-b{flex:none}
+/* 자료실 '보기' : 쪽 그림을 그 줄 아래에 펼침 (사용자 11/12 "자료실도 보고서처럼 보고 다운받게") */
+.file-view{display:flex;flex-direction:column;gap:6px;padding:10px 14px 12px;border-top:1px solid var(--line);background:var(--sunken)}
+.file-view .s-img{border-radius:6px;background:#fff}
+.file-view .s-pg{margin:0 0 6px}
 .drop{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:16px;background:color-mix(in srgb,var(--bg) 78%,transparent);pointer-events:none}
 .drop>div{padding:22px 28px;border:2px dashed var(--accent);border-radius:16px;background:var(--surface);color:var(--ink);font-size:16px;font-weight:700}
 
@@ -1027,12 +1031,21 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     }
     const list = fileIdx.filter((f) => !isTbmFile(f));
     if (!list.length) { box.append(el('p', 'rep-empty', '올라온 파일 없음')); return; }
-    const row = (f, withDate) => {   // 한 줄 : 이름 · 크기(·날짜) · 받기 — getFile 이 버튼 안 .af-s 글자를 '받는 중…'으로
+    const reopen = [];
+    const row = (f, withDate) => {   // 한 줄 : 이름 · 크기(·날짜) · (보기) · 받기 — getFile 이 버튼 안 .af-s 글자를 '받는 중…'으로
       const r = el('div', 'file-row'); r.title = f.name || '';
       const n = el('span', 'fr-n', f.name || '파일'); if (f.text) n.append(el('small', null, f.text));
       const b = el('button', 'btn fr-b'); b.type = 'button'; b.append(el('span', 'af-s', '받기'));
       b.addEventListener('click', () => getFile(f, b));
-      r.append(n, el('span', 'fr-m', kb(f.size || 0) + (withDate ? ' · ' + day(f.date) : '')), b);
+      r.append(n, el('span', 'fr-m', kb(f.size || 0) + (withDate ? ' · ' + day(f.date) : '')));
+      const pg = viewPages(f);
+      if (pg.length) {   // 보기 : 쪽 그림을 줄 아래에 펼침 (사용자 11/12 "판에서 볼 수 있게 자료실도 보고서처럼, 보고 다운받게")
+        const v = el('button', 'btn fr-b'); v.type = 'button'; v.textContent = '보기'; v.setAttribute('aria-expanded', 'false');
+        v.addEventListener('click', () => toggleView(f, r, v));
+        r.append(v);
+        if (fileOpen.has(f.id)) reopen.push([f, r, v]);   // 목록이 다시 그려져도 펼친 건 그대로
+      }
+      r.append(b);
       return [r, b];
     };
     for (let i = 0; i < list.length;) {
@@ -1046,6 +1059,20 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       all.addEventListener('click', async () => { all.disabled = true; for (const [x, b] of btns) await getFile(x, b); all.disabled = false; });   // 차례로 다 내려받음 (크롬은 처음 한 번 '여러 파일 다운로드' 허용을 물음)
       box.append(g);
     }
+    for (const [f, r, v] of reopen) { fileOpen.delete(f.id); toggleView(f, r, v); }
+  }
+  const viewPages = (f) => (arr(f.pages).length ? arr(f.pages) : /^image\/(png|jpe?g|webp)$/.test(f.type || '') ? [f] : []);   // 쪽 그림 (그림 파일은 그 자체)
+  const fileOpen = new Set();   // 펼친 파일 (목록이 다시 그려져도 유지)
+  function toggleView(f, r, v) {
+    const nx = r.nextElementSibling;
+    if (nx && nx.classList.contains('file-view')) { nx.remove(); fileOpen.delete(f.id); v.setAttribute('aria-expanded', 'false'); v.textContent = '보기'; return; }
+    const box = el('div', 'file-view'), pg = viewPages(f);
+    pg.forEach((p, i) => {
+      const im = el('img', 's-img'); im.alt = (f.name || '파일') + ' ' + (i + 1) + '쪽'; im.loading = 'lazy';
+      pageUrl(p).then((u) => { if (u) im.src = u; else im.replaceWith(el('p', 'rep-empty', (i + 1) + '쪽을 못 불러왔어')); });
+      box.append(im, el('div', 's-pg', (i + 1) + ' / ' + pg.length));
+    });
+    r.after(box); fileOpen.add(f.id); v.setAttribute('aria-expanded', 'true'); v.textContent = '접기';
   }
   function renderReports() {
     if (repOpen) { renderDeck(); return; }
