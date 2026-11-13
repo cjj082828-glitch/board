@@ -96,6 +96,11 @@ body:not([data-tab="file"]) #filePage{display:none!important}
 .file-view{display:flex;flex-direction:column;gap:6px;padding:10px 14px 12px;border-top:1px solid var(--line);background:var(--sunken)}
 .file-view .s-img{border-radius:6px;background:#fff}
 .file-view .s-pg{margin:0 0 6px}
+/* 11/13 : 보기 버튼 없이 줄을 누르면 펼침, 펼친 그림을 누르면 접힘 */
+.file-row.can-view{cursor:pointer;scroll-margin-top:76px}   /* 접고 그 줄로 돌아올 때 위 탭 막대에 안 가리게 */
+.file-row.can-view:hover,.file-row.can-view[aria-expanded="true"]{background:var(--sunken)}
+.file-row.can-view:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.file-view{cursor:pointer}
 .drop{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:16px;background:color-mix(in srgb,var(--bg) 78%,transparent);pointer-events:none}
 .drop>div{padding:22px 28px;border:2px dashed var(--accent);border-radius:16px;background:var(--surface);color:var(--ink);font-size:16px;font-weight:700}
 
@@ -1040,10 +1045,11 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       r.append(n, el('span', 'fr-m', kb(f.size || 0) + (withDate ? ' · ' + day(f.date) : '')));
       const pg = viewPages(f);
       if (pg.length) {   // 보기 : 쪽 그림을 줄 아래에 펼침 (사용자 11/12 "판에서 볼 수 있게 자료실도 보고서처럼, 보고 다운받게")
-        const v = el('button', 'btn fr-b'); v.type = 'button'; v.textContent = '보기'; v.setAttribute('aria-expanded', 'false');
-        v.addEventListener('click', () => toggleView(f, r, v));
-        r.append(v);
-        if (fileOpen.has(f.id)) reopen.push([f, r, v]);   // 목록이 다시 그려져도 펼친 건 그대로
+        // 11/13 사용자 "접기 보기 따로 버튼 말고 해당 칸의 받기 말고 어딜 눌러도 파일 보이고, 파일 보다가 아무 데나 누르면 다시 접기로" → 보기 버튼 없앰, 줄을 누르면 펼침/접힘
+        r.classList.add('can-view'); r.tabIndex = 0; r.setAttribute('role', 'button'); r.setAttribute('aria-expanded', 'false');
+        r.addEventListener('click', (e) => { if (!e.target.closest('.fr-b')) toggleView(f, r); });
+        r.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target === r) { e.preventDefault(); toggleView(f, r); } });
+        if (fileOpen.has(f.id)) reopen.push([f, r]);   // 목록이 다시 그려져도 펼친 건 그대로
       }
       r.append(b);
       return [r, b];
@@ -1059,20 +1065,25 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       all.addEventListener('click', async () => { all.disabled = true; for (const [x, b] of btns) await getFile(x, b); all.disabled = false; });   // 차례로 다 내려받음 (크롬은 처음 한 번 '여러 파일 다운로드' 허용을 물음)
       box.append(g);
     }
-    for (const [f, r, v] of reopen) { fileOpen.delete(f.id); toggleView(f, r, v); }
+    for (const [f, r] of reopen) { fileOpen.delete(f.id); toggleView(f, r); }
   }
   const viewPages = (f) => (arr(f.pages).length ? arr(f.pages) : /^image\/(png|jpe?g|webp)$/.test(f.type || '') ? [f] : []);   // 쪽 그림 (그림 파일은 그 자체)
   const fileOpen = new Set();   // 펼친 파일 (목록이 다시 그려져도 유지)
-  function toggleView(f, r, v) {
+  function toggleView(f, r) {
     const nx = r.nextElementSibling;
-    if (nx && nx.classList.contains('file-view')) { nx.remove(); fileOpen.delete(f.id); v.setAttribute('aria-expanded', 'false'); v.textContent = '보기'; return; }
+    if (nx && nx.classList.contains('file-view')) {   // 접기 : 펼친 그림이 길어 줄이 화면 위로 올라가 있으면 그 줄로 돌아옴
+      nx.remove(); fileOpen.delete(f.id); r.setAttribute('aria-expanded', 'false');
+      if (r.getBoundingClientRect().top < 0) r.scrollIntoView({ block: 'start' });
+      return;
+    }
     const box = el('div', 'file-view'), pg = viewPages(f);
+    box.title = '누르면 접힘'; box.addEventListener('click', () => toggleView(f, r));   // 그림 아무 데나 누르면 접힘
     pg.forEach((p, i) => {
       const im = el('img', 's-img'); im.alt = (f.name || '파일') + ' ' + (i + 1) + '쪽'; im.loading = 'lazy';
       pageUrl(p).then((u) => { if (u) im.src = u; else im.replaceWith(el('p', 'rep-empty', (i + 1) + '쪽을 못 불러왔어')); });
       box.append(im, el('div', 's-pg', (i + 1) + ' / ' + pg.length));
     });
-    r.after(box); fileOpen.add(f.id); v.setAttribute('aria-expanded', 'true'); v.textContent = '접기';
+    r.after(box); fileOpen.add(f.id); r.setAttribute('aria-expanded', 'true');
   }
   function renderReports() {
     if (repOpen) { renderDeck(); return; }
