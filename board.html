@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content"><!-- 11/13 : 안드로이드 크롬에서 자판이 뜨면 화면이 줄어 대화창이 자판 위로 올라오게 -->
 <meta name="robots" content="noindex,nofollow">
 <title>운영센터 업무판</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
@@ -1383,7 +1383,23 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     $('chatText').addEventListener('input', growChat);
     $('attBtn').addEventListener('click', () => $('chatImg').click());
     $('chatImg').addEventListener('change', () => { const f = $('chatImg').files[0]; $('chatImg').value = ''; attach(f); });
-    $('chatText').addEventListener('paste', (e) => { const fl = Array.from((e.clipboardData && e.clipboardData.files) || []); const f = fl.find((x) => x.type.startsWith('image/')) || fl[0]; if (f) { e.preventDefault(); attach(f); } });   // 캡처 붙여넣기는 사진, 복사한 파일은 파일로
+    $('chatText').addEventListener('paste', (e) => {   // 캡처 붙여넣기는 사진, 복사한 파일은 파일로
+      const cd = e.clipboardData; if (!cd) return;
+      // 11/13 사용자 "글자 붙여넣기도 사진으로 들어가는 건 문제" : 파워포인트·한쇼·엑셀에서 글을 복사하면 그림도 같이 실려 옴 → 글자가 있으면 글자로
+      if ((cd.getData('text/plain') || '').trim()) return;
+      const fl = Array.from(cd.files || []); const f = fl.find((x) => x.type.startsWith('image/')) || fl[0];
+      if (f) { e.preventDefault(); attach(f); }
+    });
+    // 11/13 사용자 "폰에서 판 쓸 때 자판 때문에 대화창이 가려" : 자판이 화면을 덮기만 하는 폰(요즘 크롬·아이폰)은 자판 높이만큼 대화창을 올림
+    if (window.visualViewport) {
+      const vv = window.visualViewport;
+      const fitDock = () => {
+        const kb = vv.scale > 1.05 ? 0 : Math.max(0, Math.round(innerHeight - vv.height - vv.offsetTop));   // 손가락으로 확대한 땐 그대로
+        $('dock').style.bottom = kb > 60 ? kb + 'px' : '';
+        $('msgs').style.maxHeight = kb > 60 ? Math.max(90, Math.round(vv.height - 190)) + 'px' : '';
+      };
+      vv.addEventListener('resize', fitDock); vv.addEventListener('scroll', fitDock);
+    }
     // 끌어다 놓기 (사용자 10/30 "파일 드래그로도 첨부되게") : 창 어디에 놓아도 메모에 첨부, 여러 개면 하나씩 차례로
     let dragN = 0;
     const hasFiles = (e) => Array.from((e.dataTransfer && e.dataTransfer.types) || []).includes('Files');
