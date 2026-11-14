@@ -38,6 +38,10 @@ button{font:inherit;color:inherit;cursor:pointer}
 .deckbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:14px 0}
 .deckbar .ttl{flex:1;min-width:160px;font-weight:800;font-size:16px}
 .deckbar .ttl small{display:block;font-weight:500;font-size:12px;color:var(--mut)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.chip{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:5px 12px;font-size:13px;color:var(--ink)}
+.chip.on{background:var(--gold2);border-color:var(--gold2);color:#1C2230;font-weight:700}
+.chip small{color:var(--mut);margin-left:4px}.chip.on small{color:#3A3020}
 .slides{display:flex;flex-direction:column;gap:14px}
 .sl{position:relative;width:100%;aspect-ratio:16/9;background:#fff;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
 .sl img{display:block;width:100%;height:100%;object-fit:contain}
@@ -63,6 +67,7 @@ button{font:inherit;color:inherit;cursor:pointer}
       <button class="btn" id="modeOne" type="button">한 장씩</button>
       <button class="btn" id="ppt" type="button">PPT 받기</button>
     </div>
+    <div class="chips" id="chips"></div>
     <div class="slides" id="slides"></div>
     <div id="oneBox" hidden>
       <div class="one" id="one"></div>
@@ -120,7 +125,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   const pageUrl = (f) => { if (!urls.has(f.id)) urls.set(f.id, fileBlob(f).then((b) => URL.createObjectURL(b)).catch(() => { urls.delete(f.id); return ''; })); return urls.get(f.id); };
 
   // 목록 · 보기
-  let list = [], open = null, doc = null, mode = 'scroll', at = 0, unsub = null;
+  let list = [], open = null, doc = null, mode = 'scroll', at = 0, unsub = null, cat = '전체';   // cat : 카테고리 골라 보기 (2026-11-14)
   try { mode = localStorage.getItem('wb_mode') === 'one' ? 'one' : 'scroll'; } catch (e) {}
   function renderList() {
     $('deckView').hidden = true; $('listView').hidden = false;
@@ -136,7 +141,7 @@ button{font:inherit;color:inherit;cursor:pointer}
     }
   }
   function openReport(id) {
-    open = id; doc = null; at = 0;
+    open = id; doc = null; at = 0; cat = '전체';
     if (unsub) unsub();
     unsub = sub('rep_' + id, (v) => { if (open !== id) return; doc = v || null; renderDeck(); });
     renderDeck(); scrollTo(0, 0);
@@ -148,9 +153,23 @@ button{font:inherit;color:inherit;cursor:pointer}
     if (s && s.img) pageUrl(s.img).then((u) => { if (u) { im.src = u; ld.remove(); } else ld.textContent = '못 불러왔어 · 새로고침해 줘'; });
     return box;
   }
+  // 2026-11-14 사용자 "카테고리별 정보 … 이런 식으로 카테고리를 나눠야", 판에서 골라 보기 : 장마다 cat (wow_board.py), 위 단추로 거름
+  function renderChips() {
+    const cats = arr(doc && doc.cats).filter((c) => c && c !== '표지'), box = $('chips');
+    box.hidden = !cats.length; box.replaceChildren();
+    const all = arr(doc && doc.slides);
+    for (const c of ['전체', ...cats]) {
+      const b = el('button', 'chip' + (c === cat ? ' on' : ''), c); b.type = 'button';
+      b.append(el('small', null, String(c === '전체' ? all.length : all.filter((s) => s && s.cat === c).length)));
+      b.addEventListener('click', () => { cat = c; at = 0; renderDeck(); scrollTo(0, 0); });
+      box.append(b);
+    }
+  }
   function renderDeck() {
     $('listView').hidden = true; $('deckView').hidden = false;
-    const sl = arr(doc && doc.slides), n = sl.length;
+    if (doc && cat !== '전체' && !arr(doc.cats).includes(cat)) cat = '전체';
+    renderChips();
+    const sl = arr(doc && doc.slides).filter((s) => cat === '전체' || (s && s.cat === cat)), n = sl.length;
     $('deckTitle').replaceChildren(document.createTextNode(doc ? (doc.title || '') : '불러오는 중…'), el('small', null, doc ? dlabel(doc.date) + (n ? ' · ' + n + '장' : '') : ''));
     $('ppt').hidden = !arr(doc && doc.files).length;
     $('modeScroll').classList.toggle('on', mode === 'scroll'); $('modeOne').classList.toggle('on', mode === 'one');
