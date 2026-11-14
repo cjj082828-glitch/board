@@ -6,7 +6,9 @@
 <title>와우 판</title>
 <!-- 2026-11-14 사용자 "와우세션에 우리 정보 수집하는거 그날그날 ppt로 만들어가지고 웹 대시보드에 올려 … 메르츠타워 업무에 판 만든거랑
      비슷하게 따로" : 메리츠 업무판(board.html)과 같은 파이어베이스·같은 아이디·비밀번호, 데이터 칸만 따로 (wow_board.py 와 같은 키 만들기).
-     매일 11시 정보 수집 보고 → make_slides.py 쪽 그림 + PPT → wow_board.py put → 여기 목록. -->
+     매일 11시 정보 수집 보고 → make_slides.py 쪽 그림 + PPT → wow_board.py put → 여기 목록.
+     2026-11-14 17:2x 사용자 "아니야 거긴 비밀번호 빼, 와우판은" : 로그인 없음 — 와우 키(wow_config.json 과 같은 값)가 이 파일 안에 있음
+     (공개 저장소라 사실상 공개 판, 저장은 그대로 암호화). ↩ wow_백업(비밀번호 빼기 전 2026-11-14).html -->
 <style>
 :root{color-scheme:dark;--bg:#24282E;--card:#31363F;--line:#535C69;--ink:#E8EAED;--mut:#A3AAB5;--gold:#E0B25A;--gold2:#C8963E}
 *{box-sizing:border-box}
@@ -22,13 +24,6 @@ button{font:inherit;color:inherit;cursor:pointer}
 .btn.on{background:var(--gold2);border-color:var(--gold2);color:#1C2230;font-weight:700}
 .btn:disabled{opacity:.5;cursor:default}
 #state{margin:40px auto;text-align:center;color:var(--mut)}
-/* 로그인 */
-#auth{max-width:340px;margin:12vh auto 0;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px}
-#auth h1{margin:0 0 16px;font-size:20px;color:var(--gold)}
-#auth input[type=text],#auth input[type=password]{width:100%;padding:10px 12px;margin:0 0 10px;border-radius:8px;border:1px solid var(--line);background:#20242A;color:var(--ink);font-size:15px}
-#auth label{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--mut);margin:2px 0 14px}
-#auth .go{width:100%;padding:10px;border-radius:8px;border:0;background:var(--gold2);color:#1C2230;font-weight:800;font-size:15px}
-#authErr{min-height:20px;margin-top:10px;font-size:14px;color:#F08A8A}
 /* 목록 */
 .list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-top:16px}
 .card{display:flex;flex-direction:column;gap:6px;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,.25)}
@@ -56,16 +51,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <body>
 <div class="top" id="topbar" hidden><div class="wrap">
   <div class="brand">와우 포에버 정보 · 판</div>
-  <button class="btn" id="logout" type="button">로그아웃</button>
 </div></div>
-<form id="auth" hidden autocomplete="on">
-  <h1>와우 판</h1>
-  <input type="text" id="authId" placeholder="아이디" autocomplete="username">
-  <input type="password" id="authPw" placeholder="비밀번호" autocomplete="current-password">
-  <label><input type="checkbox" id="authKeep"> 아이디 저장</label>
-  <button class="go" id="authGo" type="submit">로그인</button>
-  <div id="authErr"></div>
-</form>
 <div id="state">불러오는 중…</div>
 <div class="wrap">
   <div id="listView" hidden><div class="list" id="list"></div></div>
@@ -87,7 +73,6 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div id="toast" hidden></div>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script>
 (() => {
   // 메리츠 업무판과 같은 파이어베이스 (운동 앱 automatic-becf5, ppld 컬렉션)
@@ -102,14 +87,13 @@ button{font:inherit;color:inherit;cursor:pointer}
   const toast = (m) => { const t = $('toast'); t.textContent = m; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 3200); };
   const showState = (m) => { $('state').textContent = m; $('state').hidden = !m; };
 
-  // 키 : 로그인 봉투(메리츠 판과 같은 bd_login_…)에서 메리츠 비밀키를 꺼내 와우 키 = sha256("wow-board|" + 그 키) (wow_board.py 와 같음).
-  // 메리츠 비밀키는 저장 안 함 — 이 창(세션) 동안 와우 키만 기억, '아이디 저장'이면 아이디만
+  // 키 : wow_board.py 의 wow_config.json 과 같은 값 (로그인 없음, 2026-11-14 사용자 "비밀번호 빼")
   const te = new TextEncoder(), td = new TextDecoder();
   const fromB64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
   const hex = (u8) => Array.from(u8, (b) => b.toString(16).padStart(2, '0')).join('');
   const sha = async (t) => hex(new Uint8Array(await crypto.subtle.digest('SHA-256', te.encode(t))));
-  let WSECRET = '', KEY = null, PFX = '', fs = null, auth = null;
-  try { WSECRET = sessionStorage.getItem('wb_auth') || ''; } catch (e) {}
+  const WSECRET = '8c325f64bc736505fd767b89412dbe2ce42d1863d30ee7e1b16237ff2873afb1';
+  let KEY = null, PFX = '', fs = null;
   async function keysOf(ws) {
     const pfx = 'wb_' + (await sha(ws)).slice(0, 16) + '_';
     const base = await crypto.subtle.importKey('raw', te.encode(ws), 'PBKDF2', false, ['deriveKey']);
@@ -121,7 +105,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   const ref = (name) => fs.collection('ppld').doc(PFX + name);
   function sub(name, cb) {
     return ref(name).onSnapshot(async (s) => { const d = s.exists ? s.data() : null; cb(d && typeof d.v === 'string' ? await dec(d.v) : null, !!d); },
-      (e) => { if (e && e.code === 'permission-denied') return logout(); cb(null, false); });
+      () => cb(null, false));
   }
   async function fileBlob(f) {   // fil_<id>_<번호> 조각 모아 하나로 (쪽 그림·PPT)
     const parts = [];
@@ -134,52 +118,6 @@ button{font:inherit;color:inherit;cursor:pointer}
   }
   const urls = new Map();
   const pageUrl = (f) => { if (!urls.has(f.id)) urls.set(f.id, fileBlob(f).then((b) => URL.createObjectURL(b)).catch(() => { urls.delete(f.id); return ''; })); return urls.get(f.id); };
-
-  // 로그인 (메리츠 board.html 과 같은 봉투·파이어베이스 계정)
-  async function loginDoc(id) { return 'bd_login_' + (await sha('meritz-board-login|' + id.trim().toLowerCase())).slice(0, 24); }
-  async function pwKey(pw, salt) {
-    const base = await crypto.subtle.importKey('raw', te.encode(pw), 'PBKDF2', false, ['deriveKey']);
-    return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 310000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
-  }
-  async function openSecret(id, pw) {
-    const s = await fs.collection('ppld').doc(await loginDoc(id)).get(); const d = s.exists ? s.data() : null;
-    if (!d || typeof d.v !== 'string') return '';
-    try { const u = fromB64(d.v); return td.decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: u.subarray(16, 28) }, await pwKey(pw, u.subarray(0, 16)), u.subarray(28))); }
-    catch (e) { return ''; }
-  }
-  async function keyWorks(ws) {   // 그 키로 보고 목록(rep_index)이 풀리면 맞는 키
-    const k = await keysOf(ws);
-    const s = await fs.collection('ppld').doc(k.pfx + 'rep_index').get();
-    if (!s.exists || typeof s.data().v !== 'string') return null;
-    try { await decWith(k.key, s.data().v); return k; } catch (e) { return null; }
-  }
-  async function fbSignIn(id, pw) {   // 파이어베이스 계정이 없거나 꺼져 있으면 그냥 넘어감 (메리츠 판과 같음)
-    const u = id.trim().toLowerCase();
-    try { await auth.signInWithEmailAndPassword('mb-' + (await sha('meritz-board-fb|' + u)).slice(0, 20) + '@automatic-becf5.firebaseapp.com', await sha('meritz-board-fbpw|' + u + '|' + pw)); }
-    catch (e) { console.warn('파이어베이스 로그인 안 됨', e.code); }
-  }
-  function logout() { try { sessionStorage.removeItem('wb_auth'); } catch (e) {} Promise.resolve(auth && auth.signOut()).catch(() => {}).finally(() => location.reload()); }
-  function showAuth() {
-    showState(''); $('auth').hidden = false;
-    let saved = ''; try { saved = localStorage.getItem('wb_uid') || ''; } catch (e) {}
-    if (saved) { $('authId').value = saved; $('authKeep').checked = true; }
-    $('auth').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const id = $('authId').value.trim(), pw = $('authPw').value, keep = $('authKeep').checked;
-      const err = (m) => { $('authErr').textContent = m; $('authGo').disabled = false; };
-      if (!id || !pw) return err('아이디와 비밀번호를 넣어줘.');
-      $('authGo').disabled = true; $('authErr').textContent = '확인하는 중…';
-      try {
-        await fbSignIn(id, pw);
-        const ms = await openSecret(id, pw);
-        const ws = ms ? await sha('wow-board|' + ms) : '';
-        if (!ws || !(await keyWorks(ws))) return err('아이디나 비밀번호가 틀렸어. (아직 올린 보고가 없을 수도 있어)');
-        try { sessionStorage.setItem('wb_auth', ws); if (keep) localStorage.setItem('wb_uid', id); else localStorage.removeItem('wb_uid'); } catch (x) {}
-        location.reload();
-      } catch (x) { err('연결이 안 돼. 인터넷 확인하고 다시 해줘.'); }
-    });
-    (saved ? $('authPw') : $('authId')).focus();
-  }
 
   // 목록 · 보기
   let list = [], open = null, doc = null, mode = 'scroll', at = 0, unsub = null;
@@ -237,13 +175,9 @@ button{font:inherit;color:inherit;cursor:pointer}
     if (!window.crypto || !crypto.subtle) { showState('이 브라우저는 암호화를 지원하지 않아. 크롬·엣지 최신 버전으로 열어줘.'); return; }
     try {
       firebase.initializeApp(FB); fs = firebase.firestore(); fs.settings({ experimentalAutoDetectLongPolling: true, merge: true });
-      auth = firebase.auth(); await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
-      await new Promise((r) => { const off = auth.onAuthStateChanged(() => { off(); r(); }); });
-      if (!WSECRET) { showAuth(); return; }
       ({ pfx: PFX, key: KEY } = await keysOf(WSECRET));
     } catch (e) { showState('연결 준비에 실패했어. 새로고침해 줘.'); return; }
     $('topbar').hidden = false; showState('');
-    $('logout').addEventListener('click', logout);
     $('back').addEventListener('click', closeReport);
     $('modeScroll').addEventListener('click', () => { mode = 'scroll'; try { localStorage.setItem('wb_mode', mode); } catch (e) {} renderDeck(); });
     $('modeOne').addEventListener('click', () => { mode = 'one'; try { localStorage.setItem('wb_mode', mode); } catch (e) {} renderDeck(); });
@@ -254,7 +188,7 @@ button{font:inherit;color:inherit;cursor:pointer}
     $('one').addEventListener('pointerdown', (e) => { sx = e.clientX; });
     $('one').addEventListener('pointerup', (e) => { if (sx === null) return; const dx = e.clientX - sx; sx = null; if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1); });   // 옆으로 밀면 장 넘김
     sub('rep_index', (v, exists) => {
-      if (exists && v === undefined) { logout(); return; }   // 키가 안 맞으면 다시 로그인
+      if (exists && v === undefined) { showState('판 열쇠가 안 맞아. 와우 세션에 말해 줘.'); return; }
       list = arr(v && v.list);
       if (!open) renderList();
     });
