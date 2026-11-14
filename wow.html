@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>와우 판</title>
+<!-- 2026-11-14 사용자 "와우세션에 우리 정보 수집하는거 그날그날 ppt로 만들어가지고 웹 대시보드에 올려 … 메르츠타워 업무에 판 만든거랑
+     비슷하게 따로" : 메리츠 업무판(board.html)과 같은 파이어베이스·같은 아이디·비밀번호, 데이터 칸만 따로 (wow_board.py 와 같은 키 만들기).
+     매일 11시 정보 수집 보고 → make_slides.py 쪽 그림 + PPT → wow_board.py put → 여기 목록. -->
+<style>
+:root{color-scheme:dark;--bg:#24282E;--card:#31363F;--line:#535C69;--ink:#E8EAED;--mut:#A3AAB5;--gold:#E0B25A;--gold2:#C8963E}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'Pretendard','Noto Sans KR','Malgun Gothic',system-ui,sans-serif}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+.wrap{max-width:1100px;margin:0 auto;padding:0 16px 40px}
+.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:10px;padding-top:10px;padding-bottom:10px}
+.brand{font-weight:800;font-size:18px;color:var(--gold);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 12px;font-size:14px}
+.btn:hover{border-color:var(--gold2)}
+.btn.on{background:var(--gold2);border-color:var(--gold2);color:#1C2230;font-weight:700}
+.btn:disabled{opacity:.5;cursor:default}
+#state{margin:40px auto;text-align:center;color:var(--mut)}
+/* 로그인 */
+#auth{max-width:340px;margin:12vh auto 0;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px}
+#auth h1{margin:0 0 16px;font-size:20px;color:var(--gold)}
+#auth input[type=text],#auth input[type=password]{width:100%;padding:10px 12px;margin:0 0 10px;border-radius:8px;border:1px solid var(--line);background:#20242A;color:var(--ink);font-size:15px}
+#auth label{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--mut);margin:2px 0 14px}
+#auth .go{width:100%;padding:10px;border-radius:8px;border:0;background:var(--gold2);color:#1C2230;font-weight:800;font-size:15px}
+#authErr{min-height:20px;margin-top:10px;font-size:14px;color:#F08A8A}
+/* 목록 */
+.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-top:16px}
+.card{display:flex;flex-direction:column;gap:6px;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.card:hover{border-color:var(--gold2)}
+.card .d{font-size:13px;color:var(--gold);font-weight:700}
+.card .t{font-size:17px;font-weight:800}
+.card .s{font-size:13px;color:var(--mut);line-height:1.5}
+.card .n{font-size:12px;color:var(--mut);align-self:flex-end}
+.card.new{border-color:var(--gold2)}
+.empty{color:var(--mut);margin-top:30px;text-align:center}
+/* 보기 */
+.deckbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:14px 0}
+.deckbar .ttl{flex:1;min-width:160px;font-weight:800;font-size:16px}
+.deckbar .ttl small{display:block;font-weight:500;font-size:12px;color:var(--mut)}
+.slides{display:flex;flex-direction:column;gap:14px}
+.sl{position:relative;width:100%;aspect-ratio:16/9;background:#fff;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.sl img{display:block;width:100%;height:100%;object-fit:contain}
+.sl .ld{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#8A919C;font-size:14px}
+.one{position:relative}
+.nav{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:10px}
+.nav .pg{min-width:70px;text-align:center;color:var(--mut);font-size:14px}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#111;border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:14px;z-index:20}
+</style>
+</head>
+<body>
+<div class="top" id="topbar" hidden><div class="wrap">
+  <div class="brand">와우 포에버 정보 · 판</div>
+  <button class="btn" id="logout" type="button">로그아웃</button>
+</div></div>
+<form id="auth" hidden autocomplete="on">
+  <h1>와우 판</h1>
+  <input type="text" id="authId" placeholder="아이디" autocomplete="username">
+  <input type="password" id="authPw" placeholder="비밀번호" autocomplete="current-password">
+  <label><input type="checkbox" id="authKeep"> 아이디 저장</label>
+  <button class="go" id="authGo" type="submit">로그인</button>
+  <div id="authErr"></div>
+</form>
+<div id="state">불러오는 중…</div>
+<div class="wrap">
+  <div id="listView" hidden><div class="list" id="list"></div></div>
+  <div id="deckView" hidden>
+    <div class="deckbar">
+      <button class="btn" id="back" type="button">‹ 목록</button>
+      <div class="ttl" id="deckTitle"></div>
+      <button class="btn" id="modeScroll" type="button">쭉 보기</button>
+      <button class="btn" id="modeOne" type="button">한 장씩</button>
+      <button class="btn" id="ppt" type="button">PPT 받기</button>
+    </div>
+    <div class="slides" id="slides"></div>
+    <div id="oneBox" hidden>
+      <div class="one" id="one"></div>
+      <div class="nav"><button class="btn" id="prev" type="button">‹ 이전</button><span class="pg" id="pg"></span><button class="btn" id="next" type="button">다음 ›</button></div>
+    </div>
+  </div>
+</div>
+<div id="toast" hidden></div>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script>
+(() => {
+  // 메리츠 업무판과 같은 파이어베이스 (운동 앱 automatic-becf5, ppld 컬렉션)
+  const FB = {"apiKey": "AIzaSyD-D7JrKxQybk1ts3UPUEM-DY9S0v9Py-w", "authDomain": "automatic-becf5.firebaseapp.com", "projectId": "automatic-becf5", "storageBucket": "automatic-becf5.firebasestorage.app", "messagingSenderId": "610761387610", "appId": "1:610761387610:web:836eae72f3fec1eb09f263"};
+  const $ = (id) => document.getElementById(id);
+  const DOW = ['일', '월', '화', '수', '목', '금', '토'];
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const arr = (v) => (Array.isArray(v) ? v : []);
+  const dlabel = (s) => { const [y, m, d] = String(s).split('-').map(Number); if (!d) return ''; return m + '월 ' + d + '일 (' + DOW[new Date(Date.UTC(y, m - 1, d)).getUTCDay()] + ')'; };
+  const kstToday = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+  let toastT = 0;
+  const toast = (m) => { const t = $('toast'); t.textContent = m; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 3200); };
+  const showState = (m) => { $('state').textContent = m; $('state').hidden = !m; };
+
+  // 키 : 로그인 봉투(메리츠 판과 같은 bd_login_…)에서 메리츠 비밀키를 꺼내 와우 키 = sha256("wow-board|" + 그 키) (wow_board.py 와 같음).
+  // 메리츠 비밀키는 저장 안 함 — 이 창(세션) 동안 와우 키만 기억, '아이디 저장'이면 아이디만
+  const te = new TextEncoder(), td = new TextDecoder();
+  const fromB64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+  const hex = (u8) => Array.from(u8, (b) => b.toString(16).padStart(2, '0')).join('');
+  const sha = async (t) => hex(new Uint8Array(await crypto.subtle.digest('SHA-256', te.encode(t))));
+  let WSECRET = '', KEY = null, PFX = '', fs = null, auth = null;
+  try { WSECRET = sessionStorage.getItem('wb_auth') || ''; } catch (e) {}
+  async function keysOf(ws) {
+    const pfx = 'wb_' + (await sha(ws)).slice(0, 16) + '_';
+    const base = await crypto.subtle.importKey('raw', te.encode(ws), 'PBKDF2', false, ['deriveKey']);
+    const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: te.encode('wow-board-v1'), iterations: 150000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+    return { pfx, key };
+  }
+  async function decWith(key, s) { const u = fromB64(s); return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: u.subarray(0, 12) }, key, u.subarray(12))); }
+  async function dec(s) { try { return JSON.parse(td.decode(await decWith(KEY, s))); } catch (e) { return undefined; } }
+  const ref = (name) => fs.collection('ppld').doc(PFX + name);
+  function sub(name, cb) {
+    return ref(name).onSnapshot(async (s) => { const d = s.exists ? s.data() : null; cb(d && typeof d.v === 'string' ? await dec(d.v) : null, !!d); },
+      (e) => { if (e && e.code === 'permission-denied') return logout(); cb(null, false); });
+  }
+  async function fileBlob(f) {   // fil_<id>_<번호> 조각 모아 하나로 (쪽 그림·PPT)
+    const parts = [];
+    for (let i = 0; i < (f.n || 1); i++) {
+      const s = await ref('fil_' + f.id + '_' + i).get(); const d = s.exists ? s.data() : null;
+      if (!d || typeof d.v !== 'string') throw new Error('missing');
+      parts.push(await decWith(KEY, d.v));
+    }
+    return new Blob(parts, { type: f.type || 'application/octet-stream' });
+  }
+  const urls = new Map();
+  const pageUrl = (f) => { if (!urls.has(f.id)) urls.set(f.id, fileBlob(f).then((b) => URL.createObjectURL(b)).catch(() => { urls.delete(f.id); return ''; })); return urls.get(f.id); };
+
+  // 로그인 (메리츠 board.html 과 같은 봉투·파이어베이스 계정)
+  async function loginDoc(id) { return 'bd_login_' + (await sha('meritz-board-login|' + id.trim().toLowerCase())).slice(0, 24); }
+  async function pwKey(pw, salt) {
+    const base = await crypto.subtle.importKey('raw', te.encode(pw), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 310000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+  }
+  async function openSecret(id, pw) {
+    const s = await fs.collection('ppld').doc(await loginDoc(id)).get(); const d = s.exists ? s.data() : null;
+    if (!d || typeof d.v !== 'string') return '';
+    try { const u = fromB64(d.v); return td.decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: u.subarray(16, 28) }, await pwKey(pw, u.subarray(0, 16)), u.subarray(28))); }
+    catch (e) { return ''; }
+  }
+  async function keyWorks(ws) {   // 그 키로 보고 목록(rep_index)이 풀리면 맞는 키
+    const k = await keysOf(ws);
+    const s = await fs.collection('ppld').doc(k.pfx + 'rep_index').get();
+    if (!s.exists || typeof s.data().v !== 'string') return null;
+    try { await decWith(k.key, s.data().v); return k; } catch (e) { return null; }
+  }
+  async function fbSignIn(id, pw) {   // 파이어베이스 계정이 없거나 꺼져 있으면 그냥 넘어감 (메리츠 판과 같음)
+    const u = id.trim().toLowerCase();
+    try { await auth.signInWithEmailAndPassword('mb-' + (await sha('meritz-board-fb|' + u)).slice(0, 20) + '@automatic-becf5.firebaseapp.com', await sha('meritz-board-fbpw|' + u + '|' + pw)); }
+    catch (e) { console.warn('파이어베이스 로그인 안 됨', e.code); }
+  }
+  function logout() { try { sessionStorage.removeItem('wb_auth'); } catch (e) {} Promise.resolve(auth && auth.signOut()).catch(() => {}).finally(() => location.reload()); }
+  function showAuth() {
+    showState(''); $('auth').hidden = false;
+    let saved = ''; try { saved = localStorage.getItem('wb_uid') || ''; } catch (e) {}
+    if (saved) { $('authId').value = saved; $('authKeep').checked = true; }
+    $('auth').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = $('authId').value.trim(), pw = $('authPw').value, keep = $('authKeep').checked;
+      const err = (m) => { $('authErr').textContent = m; $('authGo').disabled = false; };
+      if (!id || !pw) return err('아이디와 비밀번호를 넣어줘.');
+      $('authGo').disabled = true; $('authErr').textContent = '확인하는 중…';
+      try {
+        await fbSignIn(id, pw);
+        const ms = await openSecret(id, pw);
+        const ws = ms ? await sha('wow-board|' + ms) : '';
+        if (!ws || !(await keyWorks(ws))) return err('아이디나 비밀번호가 틀렸어. (아직 올린 보고가 없을 수도 있어)');
+        try { sessionStorage.setItem('wb_auth', ws); if (keep) localStorage.setItem('wb_uid', id); else localStorage.removeItem('wb_uid'); } catch (x) {}
+        location.reload();
+      } catch (x) { err('연결이 안 돼. 인터넷 확인하고 다시 해줘.'); }
+    });
+    (saved ? $('authPw') : $('authId')).focus();
+  }
+
+  // 목록 · 보기
+  let list = [], open = null, doc = null, mode = 'scroll', at = 0, unsub = null;
+  try { mode = localStorage.getItem('wb_mode') === 'one' ? 'one' : 'scroll'; } catch (e) {}
+  function renderList() {
+    $('deckView').hidden = true; $('listView').hidden = false;
+    const box = $('list'); box.replaceChildren();
+    if (!list.length) { box.append(el('p', 'empty', '아직 올린 보고가 없어. 매일 11시 정보 수집이 끝나면 여기에 올라와.')); return; }
+    for (const r of list) {
+      const b = el('button', 'card' + (r.date === kstToday() ? ' new' : '')); b.type = 'button';
+      b.append(el('span', 'd', dlabel(r.date) + (r.date === kstToday() ? ' · 오늘' : '')), el('span', 't', r.title || ''));
+      if (r.sub) b.append(el('span', 's', r.sub));
+      if (r.slides) b.append(el('span', 'n', r.slides + '장'));
+      b.addEventListener('click', () => openReport(r.id));
+      box.append(b);
+    }
+  }
+  function openReport(id) {
+    open = id; doc = null; at = 0;
+    if (unsub) unsub();
+    unsub = sub('rep_' + id, (v) => { if (open !== id) return; doc = v || null; renderDeck(); });
+    renderDeck(); scrollTo(0, 0);
+  }
+  function closeReport() { const id = open; open = null; doc = null; if (unsub) { unsub(); unsub = null; } renderList(); const c = id && [...$('list').children].find((x) => x.dataset && x.dataset.id === id); if (c) c.scrollIntoView({ block: 'center' }); }
+  function slideNode(s, i, n) {
+    const box = el('div', 'sl'), ld = el('div', 'ld', '불러오는 중… ' + (i + 1) + ' / ' + n), im = el('img');
+    im.alt = (i + 1) + '장'; box.append(ld, im);
+    if (s && s.img) pageUrl(s.img).then((u) => { if (u) { im.src = u; ld.remove(); } else ld.textContent = '못 불러왔어 · 새로고침해 줘'; });
+    return box;
+  }
+  function renderDeck() {
+    $('listView').hidden = true; $('deckView').hidden = false;
+    const sl = arr(doc && doc.slides), n = sl.length;
+    $('deckTitle').replaceChildren(document.createTextNode(doc ? (doc.title || '') : '불러오는 중…'), el('small', null, doc ? dlabel(doc.date) + (n ? ' · ' + n + '장' : '') : ''));
+    $('ppt').hidden = !arr(doc && doc.files).length;
+    $('modeScroll').classList.toggle('on', mode === 'scroll'); $('modeOne').classList.toggle('on', mode === 'one');
+    $('slides').hidden = mode !== 'scroll'; $('oneBox').hidden = mode !== 'one';
+    if (mode === 'scroll') { $('slides').replaceChildren(...sl.map((s, i) => slideNode(s, i, n))); return; }
+    at = Math.max(0, Math.min(at, n - 1));
+    $('one').replaceChildren(...(n ? [slideNode(sl[at], at, n)] : []));
+    $('pg').textContent = n ? (at + 1) + ' / ' + n : '';
+    $('prev').disabled = at <= 0; $('next').disabled = at >= n - 1;
+    if (n) for (const j of [at - 1, at + 1]) if (sl[j] && sl[j].img) pageUrl(sl[j].img);   // 옆 장 미리 받기
+  }
+  const go = (d) => { if (mode !== 'one' || !doc) return; at += d; renderDeck(); };
+  async function savePpt() {
+    const f = arr(doc && doc.files)[0], b = $('ppt'); if (!f || b.disabled) return;
+    b.disabled = true; b.textContent = '받는 중…';
+    try { const u = URL.createObjectURL(await fileBlob(f)); const a = el('a'); a.href = u; a.download = f.name || '와우 포에버 정보.pptx'; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 60000); }
+    catch (e) { toast('PPT를 못 받았어 · 다시 해 줘'); }
+    b.disabled = false; b.textContent = 'PPT 받기';
+  }
+
+  (async () => {
+    if (!window.crypto || !crypto.subtle) { showState('이 브라우저는 암호화를 지원하지 않아. 크롬·엣지 최신 버전으로 열어줘.'); return; }
+    try {
+      firebase.initializeApp(FB); fs = firebase.firestore(); fs.settings({ experimentalAutoDetectLongPolling: true, merge: true });
+      auth = firebase.auth(); await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+      await new Promise((r) => { const off = auth.onAuthStateChanged(() => { off(); r(); }); });
+      if (!WSECRET) { showAuth(); return; }
+      ({ pfx: PFX, key: KEY } = await keysOf(WSECRET));
+    } catch (e) { showState('연결 준비에 실패했어. 새로고침해 줘.'); return; }
+    $('topbar').hidden = false; showState('');
+    $('logout').addEventListener('click', logout);
+    $('back').addEventListener('click', closeReport);
+    $('modeScroll').addEventListener('click', () => { mode = 'scroll'; try { localStorage.setItem('wb_mode', mode); } catch (e) {} renderDeck(); });
+    $('modeOne').addEventListener('click', () => { mode = 'one'; try { localStorage.setItem('wb_mode', mode); } catch (e) {} renderDeck(); });
+    $('ppt').addEventListener('click', savePpt);
+    $('prev').addEventListener('click', () => go(-1)); $('next').addEventListener('click', () => go(1));
+    document.addEventListener('keydown', (e) => { if (!open) return; if (e.key === 'ArrowLeft') go(-1); else if (e.key === 'ArrowRight') go(1); else if (e.key === 'Escape') closeReport(); });
+    let sx = null;
+    $('one').addEventListener('pointerdown', (e) => { sx = e.clientX; });
+    $('one').addEventListener('pointerup', (e) => { if (sx === null) return; const dx = e.clientX - sx; sx = null; if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1); });   // 옆으로 밀면 장 넘김
+    sub('rep_index', (v, exists) => {
+      if (exists && v === undefined) { logout(); return; }   // 키가 안 맞으면 다시 로그인
+      list = arr(v && v.list);
+      if (!open) renderList();
+    });
+  })();
+})();
+</script>
+</body>
+</html>
