@@ -144,6 +144,7 @@ body:not([data-tab="rep"]) #repSel,body:not([data-tab="rep"]) #repSelDel{display
 .tab[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
 .mode .tab{height:30px;padding:0 12px;font-size:13px}
 .slides{display:flex;flex-direction:column;gap:16px}
+#slides .slide,#slide{cursor:pointer}   /* 보고서 내용 누르면 목록으로 (11/13) */
 .s-pg{align-self:flex-end;margin-top:auto;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .dots{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
 .dot{width:9px;height:9px;border-radius:50%;border:0;padding:0;background:var(--line);cursor:pointer}
@@ -571,7 +572,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   let checks = { done: {}, notes: {}, result: {} }, chatMsgs = [], cnotes = {};
   let pastMsgs = []; const pastLoaded = new Set();   // 지난 날 대화 (사용자 11/10 "그냥 계속 누적되게 못하나 대화창") — 저장은 그대로 날짜마다 chat_<날짜>
   let tbmDate = nextWorkday(kstToday()), tbmDirty = false, tbmDoc = null;
-  let statusAt = 0, waitingSince = 0;
+  let statusAt = 0, waitingSince = 0, doing = null, typingEl = null;   // doing = PC 훅이 올린 지금 하는 일 {at, text} (사용자 11/16 "확인중... 만 떠잇지말고 좀더 정확히 뭐하고있는지")
   const subs = {};
   const pending = new Map();
   let busy = false, deferred = false, toastTimer = 0;
@@ -821,6 +822,11 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     });
     return b;
   }
+  function typingText() {   // 사용자 글 뒤에 올라온 '하는 일'만, 3분 지나면 예전처럼
+    const at = doing && doing.text ? Date.parse(doing.at) : 0;
+    if (!alive()) return '연결 끊김 · 연결되면 확인';
+    return at > waitingSince - 2000 && Date.now() - at < 180000 ? '확인 중 · ' + doing.text : '확인 중…';
+  }
   function renderChat() {
     const box = $('msgs');
     const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
@@ -847,7 +853,8 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     }
     const replied = chatMsgs.some((m) => m.from === 'claude' && Date.parse(m.at) > waitingSince - 2000);
     const waiting = waitingSince && !replied && Date.now() - waitingSince < 300000;
-    if (waiting) box.append(el('div', 'typing', alive() ? '확인 중…' : '연결 끊김 · 연결되면 확인'));
+    typingEl = waiting ? el('div', 'typing', typingText()) : null;
+    if (typingEl) box.append(typingEl);
     if (atBottom || waiting) box.scrollTop = box.scrollHeight;
     if (dockOpen()) seenReplies = replyCount();
     paintNew();
@@ -1025,6 +1032,8 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   function renderFiles() {
     const box = $('fileList'); box.replaceChildren();
     const day = (d) => (isDate(d) ? md(d) + ' (' + dow(d) + ')' : '');
+    // 11/13 사용자 "업데이트한 날짜만 표기되는데 시간도 표기해줘 분까지" : 올린 시각(at, UTC) → 한국 시각 HH:MM
+    const hm = (at) => { const t = new Date(at || ''); if (isNaN(t)) return ''; const k = new Date(t.getTime() + 9 * 3600e3); return ' ' + String(k.getUTCHours()).padStart(2, '0') + ':' + String(k.getUTCMinutes()).padStart(2, '0'); };
     const tb = $('tbmFiles'); tb.replaceChildren();
     const tbms = fileIdx.filter(isTbmFile).slice(0, 10);
     if (!tbms.length) tb.append(el('p', 'rep-empty', '아직 없음'));
@@ -1032,7 +1041,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       const r = el('div', 'file-row'); r.title = f.text || f.name || '';
       const b = el('button', 'btn fr-b'); b.type = 'button'; b.append(el('span', 'af-s', '받기'));
       b.addEventListener('click', () => getFile(f, b));
-      r.append(el('span', 'fr-n', day(f.date) || f.name), el('span', 'fr-m', kb(f.size || 0)), b); tb.append(r);
+      r.append(el('span', 'fr-n', (day(f.date) + hm(f.at)) || f.name), el('span', 'fr-m', kb(f.size || 0)), b); tb.append(r);
     }
     const list = fileIdx.filter((f) => !isTbmFile(f));
     if (!list.length) { box.append(el('p', 'rep-empty', '올라온 파일 없음')); return; }
@@ -1042,7 +1051,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       const n = el('span', 'fr-n', f.name || '파일'); if (f.text) n.append(el('small', null, f.text));
       const b = el('button', 'btn fr-b'); b.type = 'button'; b.append(el('span', 'af-s', '받기'));
       b.addEventListener('click', () => getFile(f, b));
-      r.append(n, el('span', 'fr-m', kb(f.size || 0) + (withDate ? ' · ' + day(f.date) : '')));
+      r.append(n, el('span', 'fr-m', kb(f.size || 0) + (withDate ? ' · ' + day(f.date) + hm(f.at) : '')));
       const pg = viewPages(f);
       if (pg.length) {   // 보기 : 쪽 그림을 줄 아래에 펼침 (사용자 11/12 "판에서 볼 수 있게 자료실도 보고서처럼, 보고 다운받게")
         // 11/13 사용자 "접기 보기 따로 버튼 말고 해당 칸의 받기 말고 어딜 눌러도 파일 보이고, 파일 보다가 아무 데나 누르면 다시 접기로" → 보기 버튼 없앰, 줄을 누르면 펼침/접힘
@@ -1060,7 +1069,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       const items = []; while (i < list.length && list[i].batch && list[i].batch.id === bid) items.push(list[i++]);
       const g = el('div', 'file-batch'), h = el('div', 'fb-h');
       const all = el('button', 'btn solid'); all.type = 'button'; all.textContent = '모두 받기';
-      h.append(el('span', 'fb-t', f.batch.title || '묶음'), el('span', 'fb-m', items.length + '개 · ' + day(f.date)), all); g.append(h);
+      h.append(el('span', 'fb-t', f.batch.title || '묶음'), el('span', 'fb-m', items.length + '개 · ' + day(f.date) + hm(f.at)), all); g.append(h);
       const btns = items.map((x) => { const [r, b] = row(x, false); g.append(r); return [x, b]; });
       all.addEventListener('click', async () => { all.disabled = true; for (const [x, b] of btns) await getFile(x, b); all.disabled = false; });   // 차례로 다 내려받음 (크롬은 처음 한 번 '여러 파일 다운로드' 허용을 물음)
       box.append(g);
@@ -1091,7 +1100,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     const box = $('repList'); box.hidden = false; box.replaceChildren();
     if (!repIndex.length) { selMode = false; sel.clear(); selBar(); box.append(el('p', 'rep-empty', '아직 올린 보고서가 없어. 정리해 달라고 하면 여기에 올려둘게.')); return; }
     repIndex.forEach((r, i) => {
-      const id = String(r.id), w = el('div', 'rep-item' + (selMode ? ' sel-mode' : '') + (sel.has(id) ? ' on' : ''));
+      const id = String(r.id), w = el('div', 'rep-item' + (selMode ? ' sel-mode' : '') + (sel.has(id) ? ' on' : '')); w.dataset.id = id;
       const b = el('button', 'rep-card'); b.type = 'button'; b.style.setProperty('--k', CK(i));
       b.append(el('span', 'rep-date', isDate(r.date) ? md(r.date) + ' (' + dow(r.date) + ')' : ''), el('span', 'rep-t', r.title || ''));
       if (r.sub) b.append(el('span', 'rep-s', r.sub));
@@ -1140,6 +1149,11 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     renderDeck();
   }
   function closeReport() { repOpen = null; repDoc = null; if (subs.rep) { subs.rep(); subs.rep = null; } renderReports(); }
+  function backToList() {   // 보고서 보다가 내용 아무 데나 누르면 목록으로, 보던 칸이 보이게 (사용자 11/13 "보고서 탭도 자료 보다가 클릭하면 목록으로 가게")
+    const id = repOpen; closeReport();
+    const c = id && $('repList').querySelector('[data-id="' + CSS.escape(id) + '"]');
+    if (c) c.scrollIntoView({ block: 'center' }); else toTop();
+  }
   // 보고서 PDF 내려받기 (사용자 11/3 "보고서에서 보고 바로 PDF로 내려받을 수 있게 버튼") : 누를 때만 html2canvas·jsPDF 불러와 한 장씩 그려 A4 가로 폭(297mm) 쪽으로
   const loadJs = (src) => new Promise((ok, no) => { if (document.querySelector('script[src="' + src + '"]')) return ok(); const t = document.createElement('script'); t.src = src; t.onload = ok; t.onerror = () => no(new Error('불러오기 실패')); document.head.append(t); });
   // html2canvas 1.4.1은 color-mix()가 계산된 'color(srgb …)'를 못 읽음 → 복제본에 rgb()로 바꿔 넣음
@@ -1372,7 +1386,8 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     });
     let sx = null;
     $('slide').addEventListener('pointerdown', (e) => { sx = e.clientX; });
-    $('slide').addEventListener('pointerup', (e) => { if (sx === null) return; const dx = e.clientX - sx; sx = null; if (Math.abs(dx) > 50) { slideAt += dx < 0 ? 1 : -1; renderDeck(); } });
+    $('slide').addEventListener('pointerup', (e) => { if (sx === null) return; const dx = e.clientX - sx; sx = null; if (Math.abs(dx) > 50) { slideAt += dx < 0 ? 1 : -1; renderDeck(); } else if (e.button === 0) backToList(); });   // 옆으로 밀면 장 넘김, 톡 누르면 목록으로
+    $('slides').addEventListener('click', backToList);   // 쭉 보기 : 아무 장이나 누르면 목록으로
     subs.repIndex = sub('rep_index', (v) => { repIndex = arr(v && v.list); $('repCount').hidden = !repIndex.length; $('repCount').textContent = repIndex.length; if (document.body.dataset.tab === 'rep' && !repOpen) renderReports(); });
     subs.files = sub('files', (v) => { fileIdx = arr(v && v.list); $('fileCount').hidden = !fileIdx.length; $('fileCount').textContent = fileIdx.length; if (document.body.dataset.tab === 'file') renderFiles(); });
     let t0 = 'day'; try { t0 = localStorage.getItem('mb_tab') || 'day'; } catch (e) {}
@@ -1433,6 +1448,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       go(kstToday());
     });
     subs.status = sub('status', (v) => { statusAt = (v && Date.parse(v.at)) || 0; paintCState(); });
+    subs.doing = sub('doing', (v) => { doing = v || null; if (typingEl && typingEl.isConnected) typingEl.textContent = typingText(); });
     setInterval(paintCState, 60000);
     watchTbm();
   })();
