@@ -107,14 +107,20 @@ body:not([data-tab="file"]) #filePage{display:none!important}
 /* 자료 : 목록 → 한 장씩 넘겨 보는 슬라이드 */
 /* 자료 칸 안은 흰 바탕 (사용자 10/29 "자료 쪽은 칸 안 배경은 흰색으로 하자") — 칸 안에서만 색 값을 밝은 화면용으로 바꿔 씀 */
 .slide,.rep-card{--surface:#FFFFFF;--bg:#FFFFFF;--sunken:#F3F5F8;--ink:#172131;--ink-2:#475366;--muted:#5F6A7D;--line:#D5DCE5;--c1:#1A64C4;--c2:#0A7466;--c3:#985A05;--c4:#B8323C;--c5:#357029;--up:#B8323C;--down:#0A7466;--bar0:#E3A740;--bar1:#1A64C4;color:var(--ink);color-scheme:light}   /* 흰 바탕 글씨 대비 4.5 이상 (사용자 "거기에 맞춰서 색도 시인성 좋게") */
-.rep-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
-.rep-card{display:flex;flex-direction:column;gap:6px;text-align:left;padding:16px 18px;border:1px solid var(--line);border-left:5px solid var(--k,var(--c1));border-radius:var(--r-card);background:var(--surface);cursor:pointer;min-width:0}
+/* 보고서 카드 작게 (사용자 11/17 "네모칸이 너무크다 날짜 제목 장수 정도만 보이고 카드 크기를 좀 줄일까") : 날짜 · 장수 한 줄 + 제목 두 줄까지, 부제는 열었을 때만 */
+.rep-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.rep-card{display:flex;flex-direction:column;gap:4px;text-align:left;padding:10px 12px;border:1px solid var(--line);border-left:5px solid var(--k,var(--c1));border-radius:12px;background:var(--surface);cursor:pointer;min-width:0}
 .rep-card:hover{border-color:color-mix(in srgb,var(--accent) 55%,var(--line))}
 .rep-date{font-size:12px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
-.rep-t{font-size:16px;font-weight:700;overflow-wrap:anywhere}
-.rep-s{font-size:13px;color:var(--ink-2);overflow-wrap:anywhere}
-.rep-n{font-size:12px;color:var(--muted)}
+.rep-t{font-size:14.5px;font-weight:700;line-height:1.35;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
 .rep-empty{margin:0;padding:18px;border:1px dashed var(--line);border-radius:var(--r-card);color:var(--ink-2);text-align:center}
+/* 보고서 탭 안 작은 탭(칩) (사용자 11/17 "정기보고서를 내리는게맞는거같은데", "저렇게 가로로 하는방법이 최선인가 뭔가 보기가좀") : 보고서(reg 없는 것) · 주간 · 월간 · 계절별 · 다른 reg, 고른 것만 보임 */
+.rep-chips{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px}
+.rep-chip{height:30px;padding:0 10px 0 12px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink-2);font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.rep-chip:hover{color:var(--ink)}
+.rep-chip[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.rep-chip-n{font-size:11px;font-weight:700;padding:0 6px;border-radius:999px;background:var(--sunken);color:var(--ink-2)}
+.rep-chip[aria-selected="true"] .rep-chip-n{background:color-mix(in srgb,var(--accent-ink) 16%,transparent);color:var(--accent-ink)}
 .deck{display:flex;flex-direction:column;gap:12px;max-width:1040px;width:100%;margin:0 auto}
 .deck-h{display:flex;align-items:center;gap:12px;min-width:0}
 .deck-t{font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -125,12 +131,12 @@ body:not([data-tab="file"]) #filePage{display:none!important}
 #repSel:not([hidden]) ~ .out{margin-left:0}
 body:not([data-tab="rep"]) #repSel,body:not([data-tab="rep"]) #repSelDel{display:none!important}
 .rep-item{position:relative;display:flex;min-width:0}
-.rep-item>.rep-card{flex:1;padding-right:72px}
-.rep-x{position:absolute;top:10px;right:10px;height:28px;padding:0 10px;border:1px solid #D5DCE5;border-radius:8px;background:#FFFFFF;color:#B8323C;font-size:12.5px;font-weight:700;cursor:pointer}
+.rep-item>.rep-card{flex:1;padding-right:64px}
+.rep-x{position:absolute;top:8px;right:8px;height:28px;padding:0 10px;border:1px solid #D5DCE5;border-radius:8px;background:#FFFFFF;color:#B8323C;font-size:12.5px;font-weight:700;cursor:pointer}
 .rep-x:hover{border-color:#B8323C}
 .rep-x.arm{background:#B8323C;border-color:#B8323C;color:#FFFFFF}
-.rep-item.sel-mode>.rep-card{padding-left:52px;padding-right:18px}
-.rep-ck{position:absolute;left:16px;top:16px;width:24px;height:24px;border:2px solid #5F6A7D;border-radius:6px;background:#FFFFFF;display:grid;place-items:center;font-size:14px;font-weight:800;color:#FFFFFF;pointer-events:none}
+.rep-item.sel-mode>.rep-card{padding-left:46px;padding-right:12px}
+.rep-ck{position:absolute;left:14px;top:12px;width:24px;height:24px;border:2px solid #5F6A7D;border-radius:6px;background:#FFFFFF;display:grid;place-items:center;font-size:14px;font-weight:800;color:#FFFFFF;pointer-events:none}
 .rep-item.on .rep-ck{background:#1A64C4;border-color:#1A64C4}
 .rep-item.on>.rep-card{outline:3px solid #1A64C4;outline-offset:-1px}
 .btn.del.arm{background:var(--red);border-color:var(--red);color:var(--accent-ink)}
@@ -899,13 +905,13 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   }
   // 파일 : 60만 바이트씩 잘라 암호화 → fil_<id>_<번호> 문서들(문서 한도 1MB) + 대화 글에 file {id,name,size,type,n}. 사진(image/*)은 위 사진 방식
   // 판 → PC : 감시 프로그램이 업무판/받은 파일/ 에 저장, PC → 판 : board.py send-file (사용자 10/29 "보드 채팅창으로 파일도 주고받을 수 있게, 메일로 왔다 갔다 할 필요 없이")
-  const PART = 600000, FMAX = 15 * 1024 * 1024;
+  const PART = 600000, FMAX = 50 * 1024 * 1024;   // 15MB → 50MB (사용자 11/17 "이거 파일 업로드 용량 더늘려줘") — 파이어베이스 무료 저장 1GiB 전체에 걸리고 대화 파일 조각은 안 지워져서 50MB에서 멈춤 (board.py 와 같음)
   const kb = (n) => n < 1048576 ? Math.max(1, Math.round(n / 1024)) + 'KB' : (n / 1048576).toFixed(1) + 'MB';
   const isPic = (f) => f.type.startsWith('image/') && !/gif|svg/.test(f.type);
   let attPending = [];   // 붙여 놓고 아직 안 보낸 사진·파일 → '등록' 때 글이랑 같이
   function attach(file) {
     if (!file) return;
-    if (!isPic(file) && file.size > FMAX) { toast('15MB까지만 돼 · 더 크면 메일로'); return; }
+    if (!isPic(file) && file.size > FMAX) { toast('50MB까지만 돼 · 더 크면 메일로'); return; }
     attPending.push({ file, url: isPic(file) ? URL.createObjectURL(file) : '' }); renderTray();
     $('chatText').focus();
   }
@@ -1094,23 +1100,43 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     });
     r.after(box); fileOpen.add(f.id); r.setAttribute('aria-expanded', 'true');
   }
+  let repChip = ''; try { repChip = localStorage.getItem('mb_repchip') || ''; } catch (e) {}   // 보고서 탭에서 고른 칩 ('' = 보고서, 그 밖엔 reg 값) — 처음엔 '보고서'
   function renderReports() {
     if (repOpen) { renderDeck(); return; }
     $('deck').hidden = true;
     const box = $('repList'); box.hidden = false; box.replaceChildren();
     if (!repIndex.length) { selMode = false; sel.clear(); selBar(); box.append(el('p', 'rep-empty', '아직 올린 보고서가 없어. 정리해 달라고 하면 여기에 올려둘게.')); return; }
-    repIndex.forEach((r, i) => {
+    const card = (r, i) => {
       const id = String(r.id), w = el('div', 'rep-item' + (selMode ? ' sel-mode' : '') + (sel.has(id) ? ' on' : '')); w.dataset.id = id;
       const b = el('button', 'rep-card'); b.type = 'button'; b.style.setProperty('--k', CK(i));
-      b.append(el('span', 'rep-date', isDate(r.date) ? md(r.date) + ' (' + dow(r.date) + ')' : ''), el('span', 'rep-t', r.title || ''));
-      if (r.sub) b.append(el('span', 'rep-s', r.sub));
-      if (r.slides) b.append(el('span', 'rep-n', r.slides + '장'));
+      const t = el('span', 'rep-t', r.title || ''); if (r.title) t.title = r.title;   // 두 줄 넘으면 잘리니 마우스 올리면 전체
+      b.append(el('span', 'rep-date', [isDate(r.date) ? md(r.date) + ' (' + dow(r.date) + ')' : '', r.slides ? r.slides + '장' : ''].filter(Boolean).join(' · ')), t);
       b.addEventListener('click', () => { if (!selMode) return openReport(id); if (sel.has(id)) sel.delete(id); else sel.add(id); renderReports(); });
       w.append(b);
       if (selMode) { const ck = el('span', 'rep-ck'); ck.textContent = sel.has(id) ? '✓' : ''; w.append(ck); }
       else { const x = el('button', 'rep-x'); x.type = 'button'; x.textContent = '삭제'; x.title = '이 보고서 지우기 (한 번 더 눌러야 지워짐)'; x.addEventListener('click', (e) => { e.stopPropagation(); armDelete(x, [id], '삭제?', '삭제'); }); w.append(x); }
       box.append(w);
+    };
+    // 칩 (사용자 11/17 "주간점검 월간점검 계절별 이렇게 나누는게", "정기보고서를 내리는게맞는거같은데", "저렇게 가로로 하는방법이 최선인가") : 보고서(reg 없는 것) → 주간 → 월간 → 계절별 → 다른 reg(처음 나온 순), 있는 것만 · 고른 칩 카드만 보임 · reg가 하나도 없으면 칩 없이 예전 그대로
+    const ORDER = ['주간', '월간', '계절별'], rank = (g) => (ORDER.indexOf(g) + 1) || 99, grp = (r) => (r.reg ? String(r.reg) : '');
+    const regs = [...new Set(repIndex.filter((r) => r.reg).map(grp))].sort((a, b) => rank(a) - rank(b));
+    if (!regs.length) { repIndex.forEach(card); selBar(); return; }
+    const chips = (repIndex.some((r) => !r.reg) ? [''] : []).concat(regs);
+    const cur = chips.includes(repChip) ? repChip : chips[0];
+    const row = el('div', 'rep-chips'); row.setAttribute('role', 'tablist'); row.setAttribute('aria-label', '보고서 묶음');
+    chips.forEach((g) => {
+      const c = el('button', 'rep-chip', g || '보고서'); c.type = 'button'; c.setAttribute('role', 'tab'); c.setAttribute('aria-selected', String(g === cur)); c.dataset.chip = g;
+      c.append(el('span', 'rep-chip-n', String(repIndex.filter((r) => grp(r) === g).length)));
+      c.addEventListener('click', () => {
+        if (g === cur) return;
+        repChip = g; try { localStorage.setItem('mb_repchip', g); } catch (e) {}
+        sel.clear(); renderReports();   // 선택 삭제는 보이는 칩 안에서만
+        const f = $('repList').querySelector('.rep-chip[aria-selected="true"]'); if (f) f.focus();
+      });
+      row.append(c);
     });
+    box.append(row);
+    repIndex.forEach((r, i) => { if (grp(r) === cur) card(r, i); });
     selBar();
   }
   // 보고서 지우기 (사용자 11/3 "보고서 삭제 버튼도", "목록에서 칸 우상단에 삭제 버튼, 로그아웃 왼쪽에 다중 삭제 — 누르고 체크하고 삭제") : 모두 두 번 눌러야 지움 (첫 번째는 4초 동안 '정말?')
