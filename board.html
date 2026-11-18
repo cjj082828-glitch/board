@@ -63,7 +63,7 @@ h1 .w{color:var(--muted);font-weight:500}
 .tab[aria-selected="true"]{background:#FF5A5A;color:#1C0A0A}   /* 맨 위 탭(오늘 업무·보고서·자료실) 고른 것 = 오늘 업무 칸 빨강 (사용자 11/2 "맨 위 탭도 색 오늘 업무랑 같게") */
 .tab-n{font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;background:var(--sunken);color:var(--ink-2)}
 .tab[aria-selected="true"] .tab-n{background:color-mix(in srgb,#1C0A0A 16%,transparent);color:#1C0A0A}
-.daynav{display:flex;align-items:center;gap:6px}   /* 지난 판 보기 (사용자 11/2 "그전 것도 보이게 하자") — 지난 날은 읽기만 */
+.daynav{display:flex;align-items:center;gap:6px}   /* 지난 판 보기 (사용자 11/2 "그전 것도 보이게 하자") — 지난 날도 체크·메모 됨 (11/18) */
 .daynav select{height:34px;padding:0 8px;border:1px solid var(--line);border-radius:var(--r-ctl);background:var(--surface);color:var(--ink);font:inherit;font-size:13.5px}
 .daynav .btn{height:34px;padding:0 10px}
 body.past #dLabel{color:var(--amber);font-weight:700}
@@ -573,7 +573,6 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   async function put(name, obj) { await ref(name).set({ v: await enc(obj) }); }
   async function append(name, obj) { await ref(name).set({ m: firebase.firestore.FieldValue.arrayUnion(await enc(obj)) }, { merge: true }); }
 
-  let canWrite = true;
   let dates = [], dayDoc = null, viewDate = null;
   let checks = { done: {}, notes: {}, result: {} }, chatMsgs = [], cnotes = {};
   let pastMsgs = []; const pastLoaded = new Set();   // 지난 날 대화 (사용자 11/10 "그냥 계속 누적되게 못하나 대화창") — 저장은 그대로 날짜마다 chat_<날짜>
@@ -603,6 +602,11 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   function addEvent(text, extra) {
     if (!viewDate) return;
     append('chat_' + viewDate, Object.assign({ id: uid(), from: 'event', text, at: nowIso() }, extra || {})).catch(writeFailed);
+  }
+  function chkEvent(text, extra) {   // 체크·메모 알림 — 지난 판이면 오늘 대화에 앞에 [11/14 판] 붙여서 (감시 watch.mjs는 오늘 대화만 구독, 11/18 지난 판 체크·메모 열면서)
+    const today = kstToday();
+    if (!viewDate || viewDate === today) return addEvent(text, extra);
+    append('chat_' + today, Object.assign({ id: uid(), from: 'event', text: '[' + md(viewDate) + ' 판] ' + text, at: nowIso(), date: viewDate }, extra || {})).catch(writeFailed);
   }
 
   // 할 일 목록 (메모 입력 중이면 다 친 뒤에 다시 그림)
@@ -655,7 +659,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     if (on) li.classList.add('done');
     const row = el('div', 'row');
     const box = document.createElement('input');
-    box.type = 'checkbox'; box.id = 'chk-' + id; box.checked = on; box.disabled = !canWrite || !id;
+    box.type = 'checkbox'; box.id = 'chk-' + id; box.checked = on; box.disabled = !id;
     box.addEventListener('change', () => setDone(id, box.checked));
     const body = el('div', 'body');
     const lab = el('div', 't', it.text || ''); box.setAttribute('aria-label', it.text || '');   // 글자 눌러도 체크 안 바뀜 (10/28 체크가 저절로 풀린 일)
@@ -674,7 +678,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   function memoLine(id) {
     const inp = document.createElement('input');
     inp.type = 'text'; inp.className = 'memo-in'; inp.id = 'memo-' + id; inp.maxLength = 300;
-    inp.value = checks.notes[id] || ''; inp.placeholder = '메모'; inp.setAttribute('aria-label', '메모'); inp.disabled = !canWrite;
+    inp.value = checks.notes[id] || ''; inp.placeholder = '메모'; inp.setAttribute('aria-label', '메모');
     inp.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); inp.blur(); }
       else if (e.key === 'Escape') { inp.value = checks.notes[id] || ''; inp.blur(); }
@@ -688,13 +692,13 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     return id;
   }
   function setDone(id, on) {
-    addEvent((on ? '✓ ' : '↺ ') + itemText(id), { kind: on ? 'check' : 'uncheck', item: id });
+    chkEvent((on ? '✓ ' : '↺ ') + itemText(id), { kind: on ? 'check' : 'uncheck', item: id });
     if (on) checks.done[id] = true; else delete checks.done[id];
     pushChecks(); renderTasks();
   }
   function setNote(id, v) {
     if ((checks.notes[id] || '') === v) return;
-    addEvent('메모 · ' + itemText(id) + ' → ' + (v || '지움'), { kind: 'memo', item: id });
+    chkEvent('메모 · ' + itemText(id) + ' → ' + (v || '지움'), { kind: 'memo', item: id });
     if (v) checks.notes[id] = v; else delete checks.notes[id];
     pushChecks();
   }
@@ -722,7 +726,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     for (const [v, name] of [['ok', '이행'], ['ng', '불이행']]) {
       const l = el('label', 'jd ' + v);
       const box = document.createElement('input');
-      box.type = 'checkbox'; box.checked = r === v; box.disabled = !canWrite || !id;
+      box.type = 'checkbox'; box.checked = r === v; box.disabled = !id;
       box.addEventListener('change', () => setResult(id, box.checked ? v : ''));
       l.append(box, document.createTextNode(name)); judge.append(l);
     }
@@ -730,7 +734,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     return li;
   }
   function setResult(id, v) {
-    addEvent((v === 'ok' ? '이행 · ' : v === 'ng' ? '불이행 · ' : '↺ ') + itemText(id), { kind: 'order', item: id, result: v });
+    chkEvent((v === 'ok' ? '이행 · ' : v === 'ng' ? '불이행 · ' : '↺ ') + itemText(id), { kind: 'order', item: id, result: v });
     if (v) checks.result[id] = v; else delete checks.result[id];
     pushChecks(); renderTasks();
   }
@@ -1297,9 +1301,9 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   }
   function go(date) {
     if (date !== viewDate) {
-      viewDate = date; canWrite = date === kstToday();   // 지난 판은 읽기만 (체크·메모 안 됨) — 대화는 늘 오늘 대화
-      document.body.classList.toggle('past', !canWrite);
-      $('dLabel').textContent = canWrite ? '오늘 업무' : '지난 판 · 읽기만';
+      viewDate = date; const past = date !== kstToday();   // 지난 판도 체크·메모 됨 → 그날 chk_<날짜>에 저장 (사용자 11/18 "날짜지난것도 체크나 메모 가능하게", 11/2~11/17은 읽기만) — 대화는 늘 오늘 대화
+      document.body.classList.toggle('past', past);
+      $('dLabel').textContent = past ? '지난 판 · 체크·메모 됨' : '오늘 업무';
       watchDay();
     }
     showState(''); renderAll(); setDayNav();
