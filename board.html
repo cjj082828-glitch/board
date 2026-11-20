@@ -70,13 +70,27 @@ body.past #dLabel{color:var(--amber);font-weight:700}
 .out{margin-left:auto;border:0;background:none;color:var(--muted);font-size:13px;cursor:pointer;padding:6px 4px}
 .out:hover{color:var(--ink)}
 body[data-tab="rep"] #state,body[data-tab="rep"] #board .grid,body[data-tab="rep"] .progress,body[data-tab="rep"] #foot{display:none!important}
-body:not([data-tab="rep"]) #repPage{display:none!important}
+body[data-tab="pow"] #state,body[data-tab="pow"] #board .grid,body[data-tab="pow"] .progress,body[data-tab="pow"] #foot{display:none!important}
+body:not([data-tab="rep"]):not([data-tab="pow"]) #repPage{display:none!important}   /* 전력관리 탭(pow)도 보고서 화면을 같이 씀 (11/20) */
 body[data-tab="file"] #state,body[data-tab="file"] #board .grid,body[data-tab="file"] .progress,body[data-tab="file"] #foot{display:none!important}
 body:not([data-tab="file"]) #filePage{display:none!important}
 body[data-tab="log"] #state,body[data-tab="log"] #board .grid,body[data-tab="log"] .progress,body[data-tab="log"] #foot{display:none!important}
 body:not([data-tab="log"]) #logPage{display:none!important}
 .log-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.log-bar input[type=date]{height:34px;padding:0 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;font-weight:700;color-scheme:dark}
+#logDate{height:34px;width:124px;padding:0 24px 0 9px;border:1px solid var(--line);border-radius:8px;color:var(--ink);font:inherit;font-weight:700;cursor:pointer;caret-color:transparent;background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23AEB5BF' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 9px center}
+.cal{position:fixed;z-index:30;width:280px;padding:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.45);touch-action:none;overscroll-behavior:contain;user-select:none;-webkit-user-select:none}
+.cal-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.cal-t{font-size:15px}
+.cal-nav{width:38px;height:32px;border:1px solid var(--line);border-radius:8px;background:var(--sunken);font-size:16px;cursor:pointer;color:var(--ink)}
+.cal-nav:disabled{opacity:.35;cursor:default}
+.cal-g{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+.cal-w{font-size:12px;color:var(--muted);padding:2px 0}
+.cal-d{height:34px;border:0;border-radius:8px;background:transparent;font-size:14px;cursor:pointer;color:var(--ink)}
+.cal-d:hover{background:var(--sunken)}
+.cal-d.su,.cal-w.su{color:var(--red)}.cal-d.sa,.cal-w.sa{color:var(--accent)}
+.cal-d.now{box-shadow:inset 0 0 0 1.5px var(--accent);font-weight:700}
+.cal-d.on{background:var(--accent);color:var(--accent-ink);font-weight:700}
+.cal-d:disabled{color:#6B7380;cursor:default;background:transparent}
 .log-dow{font-weight:700}.log-ro{font-size:12.5px;color:var(--muted)}.log-sp{flex:1}
 .log-card{background:var(--sunken);border:1px solid var(--line);border-left:6px solid var(--k,var(--c1));border-radius:10px;padding:10px 12px;margin-bottom:12px}
 .log-card h3{margin:0 0 8px;font-size:15px;color:var(--k,var(--c1))}
@@ -92,6 +106,8 @@ body:not([data-tab="log"]) #logPage{display:none!important}
 .log-note{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.5}
 .seg .tab{white-space:nowrap}
 @media (max-width:520px){.seg .tab{padding:0 9px;font-size:13px}}   /* 탭 4개(수변전일지 더함)가 폰 한 줄에 들어가게 */
+@media (max-width:520px){.tabs>.seg{gap:2px;padding:3px}.seg .tab{padding:0 6px;font-size:12.5px;gap:4px}.seg .tab-n{padding:1px 5px}}   /* 11/20 탭 5개(전력관리 더함) — 숫자 붙어도 폰 한 줄 */
+@media (max-width:380px){.seg .tab{padding:0 4px;font-size:12px;gap:3px}.seg .tab-n{padding:1px 4px;font-size:10.5px}}   /* 360px 폰 */
 .rep-card:disabled{cursor:progress;opacity:.7}
 /* 자료실 : 보고서 카드와 달리 한 줄 목록, 여러 개 보낸 건 묶음 + '모두 받기' (사용자 10/30) */
 .file-list{display:flex;flex-direction:column;gap:8px;max-width:960px}
@@ -133,7 +149,7 @@ body:not([data-tab="log"]) #logPage{display:none!important}
 .rep-date{font-size:12px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
 .rep-t{font-size:14.5px;font-weight:700;line-height:1.35;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
 .rep-empty{margin:0;padding:18px;border:1px dashed var(--line);border-radius:var(--r-card);color:var(--ink-2);text-align:center}
-/* 보고서 탭 안 작은 탭(칩) (사용자 11/17 "정기보고서를 내리는게맞는거같은데", "저렇게 가로로 하는방법이 최선인가 뭔가 보기가좀") : 보고서(reg 없는 것) · 주간 · 월간 · 계절별 · 다른 reg, 고른 것만 보임 */
+/* 보고서 탭 안 작은 탭(칩) (사용자 11/17 "정기보고서를 내리는게맞는거같은데", "저렇게 가로로 하는방법이 최선인가 뭔가 보기가좀") : 11/20부터 전력관리 탭 안에서만 일간 · 주간 · 월간 · 계절별, 고른 것만 보임 */
 .rep-chips{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px}
 .rep-chip{height:30px;padding:0 10px 0 12px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink-2);font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
 .rep-chip:hover{color:var(--ink)}
@@ -148,7 +164,7 @@ body:not([data-tab="log"]) #logPage{display:none!important}
 .btn.sm{height:30px;padding:0 12px;font-size:13px}
 #repSel{margin-left:auto}
 #repSel:not([hidden]) ~ .out{margin-left:0}
-body:not([data-tab="rep"]) #repSel,body:not([data-tab="rep"]) #repSelDel{display:none!important}
+body:not([data-tab="rep"]):not([data-tab="pow"]) #repSel,body:not([data-tab="rep"]):not([data-tab="pow"]) #repSelDel{display:none!important}
 .rep-item{position:relative;display:flex;min-width:0}
 .rep-item>.rep-card{flex:1;padding-right:64px}
 .rep-x{position:absolute;top:8px;right:8px;height:28px;padding:0 10px;border:1px solid #D5DCE5;border-radius:8px;background:#FFFFFF;color:#B8323C;font-size:12.5px;font-weight:700;cursor:pointer}
@@ -412,7 +428,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   </header>
 
   <nav class="tabs" id="tabs" hidden>
-    <div class="seg" role="tablist" aria-label="페이지"><button class="tab" role="tab" id="tabDay" type="button" aria-selected="true">오늘 업무</button><button class="tab" role="tab" id="tabRep" type="button" aria-selected="false">보고서<span class="tab-n" id="repCount" hidden></span></button><button class="tab" role="tab" id="tabFile" type="button" aria-selected="false">자료실<span class="tab-n" id="fileCount" hidden></span></button><button class="tab" role="tab" id="tabLog" type="button" aria-selected="false">수변전일지</button></div>
+    <div class="seg" role="tablist" aria-label="페이지"><button class="tab" role="tab" id="tabDay" type="button" aria-selected="true">오늘 업무</button><button class="tab" role="tab" id="tabRep" type="button" aria-selected="false">보고서<span class="tab-n" id="repCount" hidden></span></button><button class="tab" role="tab" id="tabFile" type="button" aria-selected="false">자료실<span class="tab-n" id="fileCount" hidden></span></button><button class="tab" role="tab" id="tabPow" type="button" aria-selected="false">전력관리<span class="tab-n" id="powCount" hidden></span></button><button class="tab" role="tab" id="tabLog" type="button" aria-selected="false">수변전일지</button></div>
     <button class="btn sm" id="repSel" type="button" hidden>선택 삭제</button><button class="btn sm del" id="repSelDel" type="button" hidden disabled>골라 줘</button>
     <button class="out" id="logout" type="button">로그아웃</button>
   </nav>
@@ -446,7 +462,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   </section>
 
   <section class="reports" id="logPage">
-    <div class="log-bar"><button class="btn" id="logPrev" type="button" aria-label="전날">‹</button><input type="date" id="logDate"><span class="log-dow" id="logDow"></span><button class="btn" id="logNext" type="button" aria-label="다음 날">›</button><button class="btn" id="logToday" type="button">오늘</button><span class="log-ro" id="logRo">읽기만</span><span class="log-sp"></span><button class="btn" id="logXd" type="button">엑셀 받기 (이 날)</button><button class="btn" id="logXm" type="button">엑셀 받기 (이 달)</button></div>
+    <div class="log-bar"><button class="btn" id="logPrev" type="button" aria-label="전날">‹</button><input type="text" id="logDate" readonly inputmode="none" autocomplete="off" aria-label="날짜" aria-haspopup="dialog" title="날짜 고르기"><span class="log-dow" id="logDow"></span><button class="btn" id="logNext" type="button" aria-label="다음 날">›</button><button class="btn" id="logToday" type="button">오늘</button><span class="log-ro" id="logRo">읽기만</span><span class="log-sp"></span><button class="btn" id="logXm" type="button">엑셀 받기 (이달)</button><button class="btn" id="logXy" type="button">엑셀 받기 (올해)</button></div>
     <div id="logBody"></div>
   </section>
 
@@ -1055,9 +1071,10 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     const was = document.body.dataset.tab;
     document.body.dataset.tab = tab;
     if (was && was !== tab) toTop();   // 내려간 채로 바꾸면 새 페이지 처음부터 보이게 (10/29)
-    $('tabDay').setAttribute('aria-selected', String(tab === 'day')); $('tabRep').setAttribute('aria-selected', String(tab === 'rep')); $('tabFile').setAttribute('aria-selected', String(tab === 'file')); $('tabLog').setAttribute('aria-selected', String(tab === 'log'));
+    $('tabDay').setAttribute('aria-selected', String(tab === 'day')); $('tabRep').setAttribute('aria-selected', String(tab === 'rep')); $('tabFile').setAttribute('aria-selected', String(tab === 'file')); $('tabPow').setAttribute('aria-selected', String(tab === 'pow')); $('tabLog').setAttribute('aria-selected', String(tab === 'log'));
     try { localStorage.setItem('mb_tab', tab); } catch (e) {}
-    if (tab === 'rep') renderReports();
+    if ((was === 'rep' && tab === 'pow') || (was === 'pow' && tab === 'rep')) { sel.clear(); selMode = false; if (repOpen) { repOpen = null; repDoc = null; if (subs.rep) { subs.rep(); subs.rep = null; } } }   // 보고서 ↔ 전력관리 : 같은 화면을 쓰니 열어 둔 보고서·선택은 닫음
+    if (tab === 'rep' || tab === 'pow') renderReports();
     if (tab === 'file') renderFiles();
     if (tab === 'log') renderLog();
   }
@@ -1069,6 +1086,57 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   const logAdd = (s, n) => isoDay(utc(s) + n * 864e5);
   const logNum = (s) => { s = String(s == null ? '' : s).replace(/[,\s]/g, ''); return s === '' ? null : (/^-?\d+(\.\d+)?$/.test(s) ? Number(s) : NaN); };
   const logFmt = (n) => Math.round(n).toLocaleString('ko-KR');
+
+  // 날짜 고르는 작은 달력 — 브라우저 기본 달력은 휠로 내려도 위 '몇 년 몇 월'이 안 바뀜 (사용자 11/20). 휠·위아래로 밀면 한 달씩, 고르면 change (입력 페이지 index.html 과 같은 코드)
+  function miniCal(inp, max) {
+    const DW = ['일', '월', '화', '수', '목', '금', '토'];
+    const box = el('div', 'cal'); box.hidden = true; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', '날짜 고르기');
+    box.innerHTML = '<div class="cal-h"><button type="button" class="cal-nav" data-m="-1" aria-label="전 달">‹</button><b class="cal-t"></b><button type="button" class="cal-nav" data-m="1" aria-label="다음 달">›</button></div><div class="cal-g"></div>';
+    document.body.append(box);
+    const title = box.querySelector('.cal-t'), g = box.querySelector('.cal-g'), nx = box.querySelector('[data-m="1"]');
+    const p2 = (n) => String(n).padStart(2, '0');
+    let y = 0, m = 0, acc = 0, ty = null;
+    function draw() {
+      const top = max(), today = kstToday(), first = new Date(Date.UTC(y, m - 1, 1)).getUTCDay(), n = new Date(Date.UTC(y, m, 0)).getUTCDate();
+      title.textContent = y + '년 ' + m + '월';
+      nx.disabled = y + '-' + p2(m) >= top.slice(0, 7);
+      g.textContent = '';
+      DW.forEach((w, i) => g.append(el('span', 'cal-w' + (i === 0 ? ' su' : i === 6 ? ' sa' : ''), w)));
+      for (let i = 0; i < 42; i++) {   // 늘 6줄 — 달마다 높이가 안 바뀌어 휠 자리가 그대로
+        const d = i - first + 1;
+        if (d < 1 || d > n) { g.append(el('span')); continue; }
+        const k = y + '-' + p2(m) + '-' + p2(d);
+        const b = el('button', 'cal-d' + (i % 7 === 0 ? ' su' : i % 7 === 6 ? ' sa' : '') + (k === today ? ' now' : '') + (k === inp.value ? ' on' : ''), d);
+        b.type = 'button'; b.dataset.d = k; b.disabled = k > top;
+        g.append(b);
+      }
+    }
+    function step(k) { if (k > 0 && nx.disabled) return; m += k; if (m < 1) { m = 12; y--; } else if (m > 12) { m = 1; y++; } draw(); }
+    function place() { const r = inp.getBoundingClientRect(); box.style.top = Math.max(8, Math.min(r.bottom + 4, innerHeight - box.offsetHeight - 8)) + 'px'; box.style.left = Math.max(8, Math.min(r.left, innerWidth - box.offsetWidth - 8)) + 'px'; }
+    function open() { const v = /^\d{4}-\d{2}-\d{2}$/.test(inp.value) ? inp.value : kstToday(); y = +v.slice(0, 4); m = +v.slice(5, 7); acc = 0; draw(); box.hidden = false; place(); }
+    function close() { box.hidden = true; }
+    inp.addEventListener('click', () => (box.hidden ? open() : close()));
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); open(); } else if (e.key === 'Escape') close(); });
+    function act(b) {
+      if (!b || b.disabled) return;
+      if (b.dataset.m) { step(Number(b.dataset.m)); return; }
+      inp.value = b.dataset.d; close(); inp.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    box.addEventListener('click', (e) => act(e.target.closest('button')));
+    box.addEventListener('wheel', (e) => { e.preventDefault(); acc += e.deltaY * (e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? 300 : 1); if (Math.abs(acc) >= 60) { step(acc > 0 ? 1 : -1); acc = 0; } }, { passive: false });
+    let t0 = null;   // 손가락 : 위아래로 밀면 한 달씩, 안 밀고 떼면 그 단추 (click 은 막음 — 밀기 뒤 click 이 가끔 안 옴)
+    box.addEventListener('touchstart', (e) => { e.stopPropagation(); const p = e.touches[0]; ty = p.clientY; t0 = { x: p.clientX, y: p.clientY, b: e.target.closest('button'), moved: false }; }, { passive: true });   // 판 앱의 당겨서 새로고침까지 안 가게
+    box.addEventListener('touchmove', (e) => {
+      e.stopPropagation(); e.preventDefault(); if (ty == null) return;
+      const p = e.touches[0]; if (t0 && (Math.abs(p.clientX - t0.x) > 10 || Math.abs(p.clientY - t0.y) > 10)) t0.moved = true;
+      const dy = p.clientY - ty; if (Math.abs(dy) >= 40) { step(dy < 0 ? 1 : -1); ty = p.clientY; }
+    }, { passive: false });
+    box.addEventListener('touchend', (e) => { e.stopPropagation(); ty = null; const t = t0; t0 = null; if (t && t.b && !t.moved && e.cancelable) { e.preventDefault(); act(t.b); } });
+    box.addEventListener('keydown', (e) => { if (e.key === 'Escape') { close(); inp.focus(); } });
+    document.addEventListener('pointerdown', (e) => { if (!box.hidden && !box.contains(e.target) && e.target !== inp) close(); }, true);
+    window.addEventListener('resize', () => { if (!box.hidden) place(); });
+    window.addEventListener('scroll', (e) => { if (!box.hidden && !box.contains(e.target)) place(); }, true);
+  }
   async function logInit() {
     if (logKey) return true;
     const s = await ref('sublog_key').get(); const d = s.exists ? s.data() : null;
@@ -1081,10 +1149,13 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   }
   async function logDay(d) {   // {r, x, u} 또는 null — 지난 날은 한 번 받은 것 다시 씀, 오늘·어제는 매번 새로
     if (d in logCache && d < logAdd(kstToday(), -1)) return logCache[d];
-    const s = await fs.collection('ppld').doc(logPfx + d).get(); const v = s.exists ? s.data().v : null;
+    const s = await fs.collection('ppld').doc(logPfx + d).get();
+    return (logCache[d] = await logOpen(s.exists ? s.data().v : null));
+  }
+  async function logOpen(v) {   // 문서 v → {r, x, u} 또는 null
     let o = null;
     if (typeof v === 'string') { try { const u = fromB64(v); o = JSON.parse(td.decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: u.subarray(0, 12) }, logKey, u.subarray(12)))); } catch (e) { o = null; } }
-    return (logCache[d] = o ? { r: o.r || {}, x: o.x || {}, u: o.u } : null);
+    return o ? { r: o.r || {}, x: o.x || {}, u: o.u } : null;
   }
   const logVal = (o, id, t) => (o && o.r[id] && o.r[id][t] != null ? String(o.r[id][t]) : '');
   function logSegs(a, p, pan) {   // 시간대 kWh — null 빈칸, 'neg' 작아짐, 'x' 교체
@@ -1160,23 +1231,104 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       box.replaceChildren(...logViews(d, a, p, w, wp));
     } catch (e) { box.replaceChildren(el('div', 'log-note', '못 불러옴 : ' + (e && e.message ? e.message : e))); }
   }
-  async function logExcel(month) {
-    const b = $(month ? 'logXm' : 'logXd'); const old = b.textContent; b.disabled = true; b.textContent = '만드는 중…';
+  // 엑셀 받기 = 원래 수변전일지 꼴 (사용자 11/20 "기존 수변전일지처럼 나오겐 안되나?", "한시트에 한달치 … 일별은 엑셀 다운 필요없고", "년도별은 월별로 시트 나눠진거 합쳐서 … 내가준 수변전일지와 같게", "수변전일지 처럼 아래로 내려가는 식으로 날짜별로")
+  // 양식 = 판 문서 sublog_form (사용자가 준 수변전일지 하루 블록 28줄의 서식·병합·글자 + styles·theme, 판 키로 암호화 — 업무판/log_form.py 가 넣음)
+  // 이달 = 시트 하나에 1일 ~ 말일 블록을 위에서 아래로 · 올해 = 1월 ~ 이번 달 시트 (이름은 준 파일 그대로) · 웹은 지침만 받음 → 반별 금일지침(24시)·전일지침·지시차·사용량만 채우고 kW·전압·전류·온도·한전 계량기·근무자는 빈칸
+  // 식 : 지시차 = 금일 − 전일, 사용량 = 지시차 × 배율 (특고압·LV-4·5·10 ×1000, LV-9 ×1), 전일지침 = 앞 블록 금일지침 (1일은 전날 웹 값) — 빈칸이면 계산 칸도 빈칸 (IF)
+  // 한셀 : 글자는 sharedStrings (inlineStr 쓰면 한셀이 엉뚱한 글자를 보임), 계산 값도 같이 적음 (다시 계산 안 해도 맞게)
+  const LOG_ROW = [['HV', 13, 1000], ['LV4', 15, 1000], ['LV5', 16, 1000], ['LV9', 17, 1], ['LV10', 18, 1000]];   // 반, 블록 안 줄 (T 금일·W 전일·Z 지시차·AB 사용량), 배율
+  let logForm = null;
+  async function logFormGet() {
+    if (logForm) return logForm;
+    const s = await ref('sublog_form').get(); const d = s.exists ? s.data() : null;
+    const o = d && typeof d.v === 'string' ? await dec(d.v) : null;
+    if (!o || !o.rows) throw new Error('수변전일지 양식이 아직 판에 없음 (log_form.py --put)');
+    return (logForm = o);
+  }
+  async function logRange(from, to) {   // from ~ to 날짜 문서를 한 번에 (문서 이름 = 열쇠 해시 + 날짜라 이름 범위로)
+    const FP = firebase.firestore.FieldPath.documentId();
+    const q = await fs.collection('ppld').orderBy(FP).startAt(logPfx + from).endAt(logPfx + to).get();
+    const out = {};
+    for (const doc of q.docs) { const o = await logOpen(doc.data().v); if (o) out[doc.id.slice(logPfx.length)] = o; }
+    return out;
+  }
+  const xesc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const colN = (n) => { let s = ''; for (; n > 0; n = Math.floor((n - 1) / 26)) s = String.fromCharCode(65 + (n - 1) % 26) + s; return s; };
+  function logSheetXml(form, ym, days, str, first) {   // 한 달 시트 — 하루 블록을 위에서 아래로
+    const [y, m] = ym.split('-').map(Number), n = new Date(Date.UTC(y, m, 0)).getUTCDate(), H = form.h;
+    const rows = [], merges = [], brks = [];
+    const T24 = (o, id) => { if (!o || !o.r[id]) return null; const v = logNum(o.r[id]['24']); return v == null || Number.isNaN(v) ? null : v; };
+    for (let i = 0; i < n; i++) {
+      const d = ym + '-' + String(i + 1).padStart(2, '0'), b = i * H, a = days[d], p = days[logAdd(d, -1)];
+      const put = {}, at = (c, r) => colN(c) + (b + r), pv = (c, r) => colN(c) + (b - H + r);   // put['T13'] = {v} | {f, v}
+      put.A2 = { v: (utc(d) - Date.UTC(1899, 11, 30)) / 864e5 };   // 날짜 (엑셀 날짜 수)
+      LOG_ROW.forEach(([id, r, mul]) => {
+        const t = T24(a, id), w = T24(p, id), z = t != null && w != null ? t - w : '';
+        if (t != null) put['T' + r] = { v: t };
+        put['W' + r] = i ? { f: 'IF(' + pv(20, r) + '="","",' + pv(20, r) + ')', v: w == null ? '' : w } : (w != null ? { v: w } : null);   // =T앞 만 쓰면 앞날이 빈칸일 때 0이 돼 사용량이 튐 (한셀 11/7 시험)
+        if (a && a.x[id]) { put['Z' + r] = put['AB' + r] = { s: '교체' }; return; }   // 계량기 교체·초기화한 날 = 웹 화면처럼 '교체' (빼면 큰 음수)
+        put['Z' + r] = { f: 'IF(OR(' + at(20, r) + '="",' + at(23, r) + '=""),"",' + at(20, r) + '-' + at(23, r) + ')', v: z };
+        put['AB' + r] = { f: 'IF(' + at(26, r) + '="","",' + at(26, r) + '*' + mul + ')', v: z === '' ? '' : z * mul };
+      });
+      for (const r of [15, 16, 17]) {   // 한전 계량기 (웹엔 없음 — 손으로 적으면 계산되게 원래 식, 빈칸이면 빈칸)
+        if (i) put['E' + r] = { f: 'IF(' + pv(2, r) + '="","",' + pv(2, r) + ')', v: '' };
+        put['H' + r] = { f: 'IF(OR(' + at(2, r) + '="",' + at(5, r) + '=""),"",(' + at(2, r) + '-' + at(5, r) + ')*3600)', v: '' };
+        if (i) put['K' + r] = { f: 'IF(' + pv(14, r) + '="","",' + pv(14, r) + ')', v: '' };
+        put['N' + r] = { f: 'IF(' + at(8, r) + '="","",' + at(8, r) + '+IF(' + at(11, r) + '="",0,' + at(11, r) + '))', v: '' };
+      }
+      for (const [c, c2] of [[2, 4], [5, 7], [8, 10], [14, 16]]) { const rg = at(c, 15) + ':' + at(c2, 17); put[colN(c) + 18] = { f: 'IF(COUNT(' + rg + ')=0,"",SUM(' + rg + '))', v: '' }; }
+      if (i) put.K18 = { f: 'IF(' + pv(14, 18) + '="","",' + pv(14, 18) + ')', v: '' };
+      for (const row of form.rows) {
+        const R = b + row.r, cs = new Map(row.cells.map((c) => [c[0], c]));
+        for (const k of Object.keys(put)) { const mm = k.match(/^([A-Z]+)(\d+)$/); if (+mm[2] === row.r && put[k]) { const ci = [...mm[1]].reduce((x, ch) => x * 26 + ch.charCodeAt(0) - 64, 0); if (!cs.has(ci)) cs.set(ci, [ci, 0, null]); } }
+        let xml = '<row r="' + R + '"' + (row.ht ? ' ht="' + row.ht + '" customHeight="1"' : '') + '>';
+        for (const [c, s, txt] of [...cs.values()].sort((x, z2) => x[0] - z2[0])) {
+          const ref2 = colN(c) + R, o = put[colN(c) + row.r];
+          if (o && o.f) xml += o.v === '' || o.v == null ? '<c r="' + ref2 + '" s="' + s + '" t="str"><f>' + xesc(o.f) + '</f><v></v></c>' : '<c r="' + ref2 + '" s="' + s + '"><f>' + xesc(o.f) + '</f><v>' + o.v + '</v></c>';
+          else if (o && o.s != null) xml += '<c r="' + ref2 + '" s="' + s + '" t="s"><v>' + str(o.s) + '</v></c>';
+          else if (o) xml += '<c r="' + ref2 + '" s="' + s + '"><v>' + o.v + '</v></c>';
+          else if (txt) xml += '<c r="' + ref2 + '" s="' + s + '" t="s"><v>' + str(txt) + '</v></c>';
+          else xml += '<c r="' + ref2 + '" s="' + s + '"/>';
+        }
+        rows.push(xml + '</row>');
+      }
+      form.merges.forEach(([c1, r1, c2, r2]) => merges.push('<mergeCell ref="' + colN(c1) + (b + r1) + ':' + colN(c2) + (b + r2) + '"/>'));
+      if (i < n - 1) brks.push('<brk id="' + (b + H) + '" max="16383" man="1"/>');   // 인쇄하면 하루 한 장
+    }
+    return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+      + '<dimension ref="A1:AD' + n * H + '"/><sheetViews><sheetView ' + (first ? 'tabSelected="1" ' : '') + 'zoomScaleNormal="100" workbookViewId="0"/></sheetViews>'
+      + form.fmt + form.cols + '<sheetData>' + rows.join('') + '</sheetData><mergeCells count="' + merges.length + '">' + merges.join('') + '</mergeCells>'
+      + form.page + '<rowBreaks count="' + brks.length + '" manualBreakCount="' + brks.length + '">' + brks.join('') + '</rowBreaks></worksheet>';
+  }
+  async function logExcel(year) {
+    const b = $(year ? 'logXy' : 'logXm'); const old = b.textContent; b.disabled = true; b.textContent = '만드는 중…';
     try {
       if (!(await logInit())) throw new Error('일지 열쇠 없음');
-      await loadJs('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
-      const ym = logDate.slice(0, 7); let ds = [logDate];
-      if (month) { ds = []; for (let x = ym + '-01'; x.slice(0, 7) === ym && x <= kstToday(); x = logAdd(x, 1)) ds.push(x); }
-      const want = [logAdd(ds[0], -1), ...ds], got = {};
-      for (let i = 0; i < want.length; i += 4) { const part = want.slice(i, i + 4); const r = await Promise.all(part.map(logDay)); part.forEach((k, j) => { got[k] = r[j]; }); }
-      const head = ['날짜', '요일', '반', '단위', '전날 24시', ...LOG_TIMES.map((t) => t + '시'), '교체·초기화', ...logLabels().map((l) => l + ' kWh'), ...(LOG_TIMES.length > 1 ? ['하루 kWh'] : [])];
-      const cv = (v) => (v === 'x' ? '교체' : v === 'neg' ? '확인' : v);
-      const nv = (s) => { const v = logNum(s); return v == null || Number.isNaN(v) ? s : v; };
-      const aoa = [head];
-      ds.forEach((d) => { const a = got[d], p = got[logAdd(d, -1)]; LOG_PAN.forEach((pn) => { const [id, name, , unit] = pn; aoa.push([d, dow(d), name, unit, nv(logVal(p, id, '24')), ...LOG_TIMES.map((t) => nv(logVal(a, id, t))), a && a.x[id] ? 'O' : '', ...logSegs(a, p, pn).map(cv), ...(LOG_TIMES.length > 1 ? [cv(logUse(a, p, pn))] : [])]); }); });
-      const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = head.map((h, i) => ({ wch: i === 2 ? 16 : 12 }));
-      const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, month ? ym : logDate);
-      XLSX.writeFile(wb, '부산메리츠타워_수변전일지_' + (month ? ym : logDate) + '.xlsx');
+      const [form] = await Promise.all([logFormGet(), loadJs('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js')]);
+      const y = +logDate.slice(0, 4), now = kstToday(), last = year ? (y < +now.slice(0, 4) ? 12 : +now.slice(5, 7)) : +logDate.slice(5, 7);
+      const yms = []; for (let m = year ? 1 : last; m <= last; m++) yms.push(y + '-' + String(m).padStart(2, '0'));
+      const days = await logRange(logAdd(yms[0] + '-01', -1), yms[yms.length - 1] + '-31');   // 1일 전일지침용으로 하루 앞부터
+      const sst = [], sidx = new Map(), str = (t) => { if (!sidx.has(t)) { sidx.set(t, sst.length); sst.push(t); } return sidx.get(t); };
+      const zip = new JSZip(), N = yms.length, names = yms.map((ym) => form.names[+ym.slice(5) - 1] || (+ym.slice(5) + '월'));
+      yms.forEach((ym, i) => zip.file('xl/worksheets/sheet' + (i + 1) + '.xml', logSheetXml(form, ym, days, str, i === 0)));
+      const X = 'http://schemas.openxmlformats.org/', ct = 'application/vnd.openxmlformats-officedocument.';
+      zip.file('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="' + X + 'package/2006/content-types"><Default Extension="rels" ContentType="' + ct.replace('officedocument.', '') + 'package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>'
+        + '<Override PartName="/xl/workbook.xml" ContentType="' + ct + 'spreadsheetml.sheet.main+xml"/>' + yms.map((_, i) => '<Override PartName="/xl/worksheets/sheet' + (i + 1) + '.xml" ContentType="' + ct + 'spreadsheetml.worksheet+xml"/>').join('')
+        + '<Override PartName="/xl/theme/theme1.xml" ContentType="' + ct + 'theme+xml"/><Override PartName="/xl/styles.xml" ContentType="' + ct + 'spreadsheetml.styles+xml"/><Override PartName="/xl/sharedStrings.xml" ContentType="' + ct + 'spreadsheetml.sharedStrings+xml"/>'
+        + '<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="' + ct + 'extended-properties+xml"/></Types>');
+      zip.file('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="' + X + 'package/2006/relationships"><Relationship Id="rId1" Type="' + X + 'officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/><Relationship Id="rId2" Type="' + X + 'package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="' + X + 'officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>');
+      zip.file('docProps/core.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<cp:coreProperties xmlns:cp="' + X + 'package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>수변전일지</dc:title><dcterms:created xsi:type="dcterms:W3CDTF">' + new Date().toISOString().slice(0, 19) + 'Z</dcterms:created></cp:coreProperties>');
+      zip.file('docProps/app.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Properties xmlns="' + X + 'officeDocument/2006/extended-properties"><Application>Microsoft Excel</Application></Properties>');
+      zip.file('xl/workbook.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<workbook xmlns="' + X + 'spreadsheetml/2006/main" xmlns:r="' + X + 'officeDocument/2006/relationships"><workbookPr defaultThemeVersion="124226"/><bookViews><workbookView activeTab="0"/></bookViews><sheets>'
+        + names.map((nm, i) => '<sheet name="' + xesc(nm) + '" sheetId="' + (i + 1) + '" r:id="rId' + (i + 1) + '"/>').join('') + '</sheets><calcPr calcId="145621" fullCalcOnLoad="1"/></workbook>');
+      zip.file('xl/_rels/workbook.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="' + X + 'package/2006/relationships">' + yms.map((_, i) => '<Relationship Id="rId' + (i + 1) + '" Type="' + X + 'officeDocument/2006/relationships/worksheet" Target="worksheets/sheet' + (i + 1) + '.xml"/>').join('')
+        + '<Relationship Id="rId' + (N + 1) + '" Type="' + X + 'officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rId' + (N + 2) + '" Type="' + X + 'officeDocument/2006/relationships/theme" Target="theme/theme1.xml"/><Relationship Id="rId' + (N + 3) + '" Type="' + X + 'officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/></Relationships>');
+      zip.file('xl/styles.xml', form.styles); zip.file('xl/theme/theme1.xml', form.theme);
+      zip.file('xl/sharedStrings.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<sst xmlns="' + X + 'spreadsheetml/2006/main" count="' + sst.length + '" uniqueCount="' + sst.length + '">' + sst.map((t) => '<si><t xml:space="preserve">' + xesc(t) + '</t></si>').join('') + '</sst>');
+      const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', mimeType: ct + 'spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob), a = document.createElement('a');
+      a.href = url; a.download = '부산메리츠타워_수변전일지_' + (year ? y + '년' : yms[0]) + '.xlsx'; document.body.append(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
     } catch (e) { toast('엑셀 못 만듦 : ' + (e && e.message ? e.message : e)); }
     b.disabled = false; b.textContent = old;
   }
@@ -1248,7 +1400,9 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     });
     r.after(box); fileOpen.add(f.id); r.setAttribute('aria-expanded', 'true');
   }
-  let repChip = ''; try { repChip = localStorage.getItem('mb_repchip') || ''; } catch (e) {}   // 보고서 탭에서 고른 칩 ('' = 보고서, 그 밖엔 reg 값) — 처음엔 '보고서'
+  let repSub = ''; try { repSub = localStorage.getItem('mb_repsub') || ''; } catch (e) {}   // 전력관리 탭에서 고른 주기 (처음이면 보고서 있는 첫 주기)
+  const SUBS = ['일간', '주간', '월간', '계절별'], grp = (r) => { const g = r.reg ? String(r.reg) : ''; return g === '일일' ? '일간' : g; };   // 데이터 reg '일일'은 '일간'으로 보임 (매일 전력 점검이 --reg 일일로 올림 — 데이터·루틴은 안 바꿈)
+  function repCounts() { const p = repIndex.filter((r) => grp(r)).length, g = repIndex.length - p; $('repCount').hidden = !g; $('repCount').textContent = g; $('powCount').hidden = !p; $('powCount').textContent = p; }
   function renderReports() {
     if (repOpen) { renderDeck(); return; }
     $('deck').hidden = true;
@@ -1265,26 +1419,29 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       else { const x = el('button', 'rep-x'); x.type = 'button'; x.textContent = '삭제'; x.title = '이 보고서 지우기 (한 번 더 눌러야 지워짐)'; x.addEventListener('click', (e) => { e.stopPropagation(); armDelete(x, [id], '삭제?', '삭제'); }); w.append(x); }
       box.append(w);
     };
-    // 칩 (사용자 11/17 "주간점검 월간점검 계절별 이렇게 나누는게", "정기보고서를 내리는게맞는거같은데", "저렇게 가로로 하는방법이 최선인가") : 보고서(reg 없는 것) → 주간 → 월간 → 계절별 → 다른 reg(처음 나온 순), 있는 것만 · 고른 칩 카드만 보임 · reg가 하나도 없으면 칩 없이 예전 그대로
-    const ORDER = ['주간', '월간', '계절별'], rank = (g) => (ORDER.indexOf(g) + 1) || 99, grp = (r) => (r.reg ? String(r.reg) : '');
-    const regs = [...new Set(repIndex.filter((r) => r.reg).map(grp))].sort((a, b) => rank(a) - rank(b));
-    if (!regs.length) { repIndex.forEach(card); selBar(); return; }
-    const chips = (repIndex.some((r) => !r.reg) ? [''] : []).concat(regs);
-    const cur = chips.includes(repChip) ? repChip : chips[0];
-    const row = el('div', 'rep-chips'); row.setAttribute('role', 'tablist'); row.setAttribute('aria-label', '보고서 묶음');
-    chips.forEach((g) => {
-      const c = el('button', 'rep-chip', g || '보고서'); c.type = 'button'; c.setAttribute('role', 'tab'); c.setAttribute('aria-selected', String(g === cur)); c.dataset.chip = g;
-      c.append(el('span', 'rep-chip-n', String(repIndex.filter((r) => grp(r) === g).length)));
-      c.addEventListener('click', () => {
-        if (g === cur) return;
-        repChip = g; try { localStorage.setItem('mb_repchip', g); } catch (e) {}
-        sel.clear(); renderReports();   // 선택 삭제는 보이는 칩 안에서만
-        const f = $('repList').querySelector('.rep-chip[aria-selected="true"]'); if (f) f.focus();
+    // 칩 (사용자 11/17 "주간점검 월간점검 계절별 이렇게 나누는게", "정기보고서를 내리는게맞는거같은데", "저렇게 가로로 하는방법이 최선인가") : 고른 칩 카드만 보임
+    // 11/20 전력관리 탭 따로 (사용자 "자료실 옆에 전력관리 넣고 그 옆에 수변전일지로 하자", 하위 "일간 주간 월간 계절별") : 보고서 탭 = reg 없는 것만(칩 없음), 전력관리 탭 = reg 있는 것 전부 → 일간 · 주간 · 월간 · 계절별(늘 보임, 0개도) · 다른 reg 값은 그 뒤에
+    let cur = '';
+    if (document.body.dataset.tab === 'pow') {
+      const subs = SUBS.concat([...new Set(repIndex.map(grp).filter((g) => g && !SUBS.includes(g)))]);
+      if (repSub === '일일') repSub = '일간';
+      cur = subs.includes(repSub) ? repSub : (subs.find((g) => repIndex.some((r) => grp(r) === g)) || SUBS[0]);
+      const row = el('div', 'rep-chips'); row.setAttribute('role', 'tablist'); row.setAttribute('aria-label', '전력 관리 주기'); box.append(row);
+      subs.forEach((g) => {
+        const c = el('button', 'rep-chip', g); c.type = 'button'; c.setAttribute('role', 'tab'); c.setAttribute('aria-selected', String(g === cur)); c.dataset.chip = g;
+        c.append(el('span', 'rep-chip-n', String(repIndex.filter((r) => grp(r) === g).length)));
+        c.addEventListener('click', () => {
+          if (g === cur) return;
+          repSub = g; try { localStorage.setItem('mb_repsub', g); } catch (e) {}
+          sel.clear(); renderReports();   // 선택 삭제는 보이는 칩 안에서만
+          const f = $('repList').querySelector('.rep-chip[aria-selected="true"]'); if (f) f.focus();
+        });
+        row.append(c);
       });
-      row.append(c);
-    });
-    box.append(row);
-    repIndex.forEach((r, i) => { if (grp(r) === cur) card(r, i); });
+    }
+    let shown = 0;
+    repIndex.forEach((r, i) => { if (grp(r) === cur) { card(r, i); shown++; } });
+    if (!shown) box.append(el('p', 'rep-empty', cur ? '아직 없어' : '아직 올린 보고서가 없어. 정리해 달라고 하면 여기에 올려둘게.'));
     selBar();
   }
   // 보고서 지우기 (사용자 11/3 "보고서 삭제 버튼도", "목록에서 칸 우상단에 삭제 버튼, 로그아웃 왼쪽에 다중 삭제 — 누르고 체크하고 삭제") : 모두 두 번 눌러야 지움 (첫 번째는 4초 동안 '정말?')
@@ -1540,13 +1697,15 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     $('tabDay').addEventListener('click', () => setTab('day'));
     $('tabRep').addEventListener('click', () => { if (document.body.dataset.tab === 'rep' && repOpen) { closeReport(); toTop(); } else setTab('rep'); });   // 보고서 보다가 '보고서' 한 번 더 누르면 목록으로 (사용자 10/29 "자료를 한 번 더 누르면 목록으로 가던가")
     $('tabFile').addEventListener('click', () => setTab('file'));
+    $('tabPow').addEventListener('click', () => { if (document.body.dataset.tab === 'pow' && repOpen) { closeReport(); toTop(); } else setTab('pow'); });   // 보고서 탭과 같게 : 보다가 한 번 더 누르면 목록으로
     $('tabLog').addEventListener('click', () => setTab('log'));
     $('logPrev').addEventListener('click', () => { logDate = logAdd(logDate || kstToday(), -1); renderLog(); });
     $('logNext').addEventListener('click', () => { const n = logAdd(logDate || kstToday(), 1); if (n <= kstToday()) { logDate = n; renderLog(); } });
     $('logToday').addEventListener('click', () => { logDate = kstToday(); renderLog(); });
     $('logDate').addEventListener('change', () => { const v = $('logDate').value; if (isDate(v) && v <= kstToday()) { logDate = v; renderLog(); } });
-    $('logXd').addEventListener('click', () => logExcel(false));
-    $('logXm').addEventListener('click', () => logExcel(true));
+    miniCal($('logDate'), kstToday);
+    $('logXm').addEventListener('click', () => logExcel(false));
+    $('logXy').addEventListener('click', () => logExcel(true));
     $('daySel').addEventListener('change', () => go($('daySel').value));
     $('prevDay').addEventListener('click', () => { const i = dates.indexOf(viewDate); if (i >= 0 && i < dates.length - 1) go(dates[i + 1]); });
     $('nextDay').addEventListener('click', () => { const i = dates.indexOf(viewDate); if (i > 0) go(dates[i - 1]); });
@@ -1562,17 +1721,17 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     $('prevSlide').addEventListener('click', () => { slideAt--; renderDeck(); });
     $('nextSlide').addEventListener('click', () => { slideAt++; renderDeck(); });
     document.addEventListener('keydown', (e) => {
-      if (document.body.dataset.tab !== 'rep' || !repOpen || deckMode !== 'one' || /^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || '')) return;
+      if (!['rep', 'pow'].includes(document.body.dataset.tab) || !repOpen || deckMode !== 'one' || /^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || '')) return;
       if (e.key === 'ArrowLeft') { slideAt--; renderDeck(); } else if (e.key === 'ArrowRight') { slideAt++; renderDeck(); }
     });
     let sx = null;
     $('slide').addEventListener('pointerdown', (e) => { sx = e.clientX; });
     $('slide').addEventListener('pointerup', (e) => { if (sx === null) return; const dx = e.clientX - sx; sx = null; if (Math.abs(dx) > 50) { slideAt += dx < 0 ? 1 : -1; renderDeck(); } else if (e.button === 0) backToList(); });   // 옆으로 밀면 장 넘김, 톡 누르면 목록으로
     $('slides').addEventListener('click', backToList);   // 쭉 보기 : 아무 장이나 누르면 목록으로
-    subs.repIndex = sub('rep_index', (v) => { repIndex = arr(v && v.list); $('repCount').hidden = !repIndex.length; $('repCount').textContent = repIndex.length; if (document.body.dataset.tab === 'rep' && !repOpen) renderReports(); });
+    subs.repIndex = sub('rep_index', (v) => { repIndex = arr(v && v.list); repCounts(); if (['rep', 'pow'].includes(document.body.dataset.tab) && !repOpen) renderReports(); });   // 보고서 숫자 = 일반만, 전력관리 숫자 = reg 있는 것 (11/20)
     subs.files = sub('files', (v) => { fileIdx = arr(v && v.list); $('fileCount').hidden = !fileIdx.length; $('fileCount').textContent = fileIdx.length; if (document.body.dataset.tab === 'file') renderFiles(); });
     let t0 = 'day'; try { t0 = localStorage.getItem('mb_tab') || 'day'; } catch (e) {}
-    setTab(['rep', 'file', 'log'].includes(t0) ? t0 : 'day');
+    setTab(['rep', 'file', 'pow', 'log'].includes(t0) ? t0 : 'day');
     $('chatForm').addEventListener('submit', (e) => { e.preventDefault(); sendChat(); });
     $('chatText').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendChat(); } });
     $('chatText').addEventListener('focus', openDock);
