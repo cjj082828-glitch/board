@@ -73,6 +73,25 @@ body[data-tab="rep"] #state,body[data-tab="rep"] #board .grid,body[data-tab="rep
 body:not([data-tab="rep"]) #repPage{display:none!important}
 body[data-tab="file"] #state,body[data-tab="file"] #board .grid,body[data-tab="file"] .progress,body[data-tab="file"] #foot{display:none!important}
 body:not([data-tab="file"]) #filePage{display:none!important}
+body[data-tab="log"] #state,body[data-tab="log"] #board .grid,body[data-tab="log"] .progress,body[data-tab="log"] #foot{display:none!important}
+body:not([data-tab="log"]) #logPage{display:none!important}
+.log-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.log-bar input[type=date]{height:34px;padding:0 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;font-weight:700;color-scheme:dark}
+.log-dow{font-weight:700}.log-ro{font-size:12.5px;color:var(--muted)}.log-sp{flex:1}
+.log-card{background:var(--sunken);border:1px solid var(--line);border-left:6px solid var(--k,var(--c1));border-radius:10px;padding:10px 12px;margin-bottom:12px}
+.log-card h3{margin:0 0 8px;font-size:15px;color:var(--k,var(--c1))}
+.log-scroll{overflow-x:auto}
+.log-t{border-collapse:collapse;width:100%;font-size:14px}
+.log-t th,.log-t td{border:1px solid var(--line);padding:5px 8px;white-space:nowrap}
+.log-t th{background:var(--surface);color:var(--ink-2);font-size:13px;font-weight:600}
+.log-t td.v{text-align:right;font-variant-numeric:tabular-nums}
+.log-t td.big{font-weight:800}.log-t td.up{color:#FF8A8A}.log-t td.dn{color:#7FC2FF}
+.log-t td.red{background:#6B2F35}.log-t td.yel{background:#5E5426}.log-t td.xo{color:var(--muted);text-align:center}
+.log-t tr.sum td{font-weight:700;background:#2A3A4E}
+.log-t td.it{position:sticky;left:0;background:var(--sunken)}.log-t tr.sum td.it{background:#2A3A4E}
+.log-note{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.5}
+.seg .tab{white-space:nowrap}
+@media (max-width:520px){.seg .tab{padding:0 9px;font-size:13px}}   /* 탭 4개(수변전일지 더함)가 폰 한 줄에 들어가게 */
 .rep-card:disabled{cursor:progress;opacity:.7}
 /* 자료실 : 보고서 카드와 달리 한 줄 목록, 여러 개 보낸 건 묶음 + '모두 받기' (사용자 10/30) */
 .file-list{display:flex;flex-direction:column;gap:8px;max-width:960px}
@@ -393,7 +412,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   </header>
 
   <nav class="tabs" id="tabs" hidden>
-    <div class="seg" role="tablist" aria-label="페이지"><button class="tab" role="tab" id="tabDay" type="button" aria-selected="true">오늘 업무</button><button class="tab" role="tab" id="tabRep" type="button" aria-selected="false">보고서<span class="tab-n" id="repCount" hidden></span></button><button class="tab" role="tab" id="tabFile" type="button" aria-selected="false">자료실<span class="tab-n" id="fileCount" hidden></span></button></div>
+    <div class="seg" role="tablist" aria-label="페이지"><button class="tab" role="tab" id="tabDay" type="button" aria-selected="true">오늘 업무</button><button class="tab" role="tab" id="tabRep" type="button" aria-selected="false">보고서<span class="tab-n" id="repCount" hidden></span></button><button class="tab" role="tab" id="tabFile" type="button" aria-selected="false">자료실<span class="tab-n" id="fileCount" hidden></span></button><button class="tab" role="tab" id="tabLog" type="button" aria-selected="false">수변전일지</button></div>
     <button class="btn sm" id="repSel" type="button" hidden>선택 삭제</button><button class="btn sm del" id="repSelDel" type="button" hidden disabled>골라 줘</button>
     <button class="out" id="logout" type="button">로그아웃</button>
   </nav>
@@ -424,6 +443,11 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       <div class="file-list" id="fileList"></div>
       <aside class="file-tbm"><div class="fb-h"><span class="fb-t">TBM 회의록</span><span class="fb-m">매일 아침 올라옴</span></div><div id="tbmFiles"></div></aside>
     </div>
+  </section>
+
+  <section class="reports" id="logPage">
+    <div class="log-bar"><button class="btn" id="logPrev" type="button" aria-label="전날">‹</button><input type="date" id="logDate"><span class="log-dow" id="logDow"></span><button class="btn" id="logNext" type="button" aria-label="다음 날">›</button><button class="btn" id="logToday" type="button">오늘</button><span class="log-ro" id="logRo">읽기만</span><span class="log-sp"></span><button class="btn" id="logXd" type="button">엑셀 받기 (이 날)</button><button class="btn" id="logXm" type="button">엑셀 받기 (이 달)</button></div>
+    <div id="logBody"></div>
   </section>
 
   <div id="board" hidden>
@@ -1031,10 +1055,130 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     const was = document.body.dataset.tab;
     document.body.dataset.tab = tab;
     if (was && was !== tab) toTop();   // 내려간 채로 바꾸면 새 페이지 처음부터 보이게 (10/29)
-    $('tabDay').setAttribute('aria-selected', String(tab === 'day')); $('tabRep').setAttribute('aria-selected', String(tab === 'rep')); $('tabFile').setAttribute('aria-selected', String(tab === 'file'));
+    $('tabDay').setAttribute('aria-selected', String(tab === 'day')); $('tabRep').setAttribute('aria-selected', String(tab === 'rep')); $('tabFile').setAttribute('aria-selected', String(tab === 'file')); $('tabLog').setAttribute('aria-selected', String(tab === 'log'));
     try { localStorage.setItem('mb_tab', tab); } catch (e) {}
     if (tab === 'rep') renderReports();
     if (tab === 'file') renderFiles();
+    if (tab === 'log') renderLog();
+  }
+  // 페이지 4 : 수변전일지 (읽기만, 2026-11-20 사용자 "업무판에 저장하는칸 따로만들어봐 거기저장해 난 거기서 볼수잇나?")
+  // 시설팀 입력 페이지(새 저장소 index.html)가 ppld 'sl_<일지 열쇠 해시 16>_<날짜>'에 일지 열쇠로 암호화해 넣은 지침을 풂 — 일지 열쇠는 판 문서 sublog_key(판 키로 암호화)
+  const LOG_TIMES = ['10', '14', '18', '24'];   // 입력 페이지 TIMES 와 같게
+  const LOG_PAN = [['HV', '특고압 HV-4', 1000, 'MWh'], ['LV4', 'LV-4 전등·전열', 1000, 'MWh'], ['LV5', 'LV-5 냉·난방', 1000, 'MWh'], ['LV9', 'LV-9 일반동력', 1, 'kWh'], ['LV10', 'LV-10 비상동력', 1000, 'MWh']];
+  let logKey = null, logPfx = '', logDate = '', logCache = {};
+  const logAdd = (s, n) => isoDay(utc(s) + n * 864e5);
+  const logNum = (s) => { s = String(s == null ? '' : s).replace(/[,\s]/g, ''); return s === '' ? null : (/^-?\d+(\.\d+)?$/.test(s) ? Number(s) : NaN); };
+  const logFmt = (n) => Math.round(n).toLocaleString('ko-KR');
+  async function logInit() {
+    if (logKey) return true;
+    const s = await ref('sublog_key').get(); const d = s.exists ? s.data() : null;
+    const o = d && typeof d.v === 'string' ? await dec(d.v) : null;
+    if (!o || !o.k) return false;
+    logPfx = 'sl_' + hex(new Uint8Array(await crypto.subtle.digest('SHA-256', te.encode(o.k)))).slice(0, 16) + '_';
+    const base = await crypto.subtle.importKey('raw', te.encode(o.k), 'PBKDF2', false, ['deriveKey']);
+    logKey = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: te.encode('sublog-v1'), iterations: 150000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+    return true;
+  }
+  async function logDay(d) {   // {r, x, u} 또는 null — 지난 날은 한 번 받은 것 다시 씀, 오늘·어제는 매번 새로
+    if (d in logCache && d < logAdd(kstToday(), -1)) return logCache[d];
+    const s = await fs.collection('ppld').doc(logPfx + d).get(); const v = s.exists ? s.data().v : null;
+    let o = null;
+    if (typeof v === 'string') { try { const u = fromB64(v); o = JSON.parse(td.decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: u.subarray(0, 12) }, logKey, u.subarray(12)))); } catch (e) { o = null; } }
+    return (logCache[d] = o ? { r: o.r || {}, x: o.x || {}, u: o.u } : null);
+  }
+  const logVal = (o, id, t) => (o && o.r[id] && o.r[id][t] != null ? String(o.r[id][t]) : '');
+  function logSegs(a, p, pan) {   // 시간대 kWh — null 빈칸, 'neg' 작아짐, 'x' 교체
+    const [id, , mul] = pan;
+    if (a && a.x[id]) return LOG_TIMES.map(() => 'x');
+    const pts = [logVal(p, id, '24'), ...LOG_TIMES.map((t) => logVal(a, id, t))].map(logNum);
+    return LOG_TIMES.map((t, i) => { const x = pts[i], y = pts[i + 1]; if (x == null || y == null || Number.isNaN(x) || Number.isNaN(y)) return null; const d = (y - x) * mul; return d < 0 ? 'neg' : Math.round(d); });
+  }
+  function logUse(a, p, pan) {
+    const [id, , mul] = pan;
+    if (a && a.x[id]) return 'x';
+    const x = logNum(logVal(p, id, '24')), y = logNum(logVal(a, id, '24'));
+    if (x == null || y == null || Number.isNaN(x) || Number.isNaN(y)) return null;
+    const d = (y - x) * mul; return d < 0 ? 'neg' : Math.round(d);
+  }
+  const logLabels = () => { const pts = ['0', ...LOG_TIMES]; return LOG_TIMES.map((t, i) => (pts[i] === '0' && t === '24' ? '하루' : pts[i] + ' ~ ' + t + '시')); };
+  const logTd = (v, cls) => { const td = el('td', 'v' + (cls ? ' ' + cls : '')); if (v === 'x') { td.textContent = '교체'; td.classList.add('xo'); } else if (v === 'neg') { td.textContent = '확인'; td.classList.add('red'); } else if (typeof v === 'number') td.textContent = logFmt(v); else if (v != null) td.textContent = v; return td; };
+  const logTable = (head) => { const t = el('table', 'log-t'); const tr = el('tr'); head.forEach((h) => tr.append(el('th', null, h))); t.append(tr); return t; };
+  const logCard = (title, color, ...kids) => { const c = el('div', 'log-card'); if (color) c.style.setProperty('--k', color); c.append(el('h3', null, title)); const sc = el('div', 'log-scroll'); sc.append(kids[0]); c.append(sc, ...kids.slice(1)); return c; };
+  const logSumLv = (vals) => (vals.every((v) => typeof v === 'number') ? vals.reduce((x, y) => x + y, 0) : null);
+  function logChg(a, b) {
+    const td = el('td', 'v');
+    if (typeof a !== 'number' || typeof b !== 'number' || !b) return td;
+    const pct = (a - b) / b * 100; td.textContent = (pct >= 0 ? '+' : '') + pct.toFixed(1) + '% ' + (pct > 0 ? '↑' : pct < 0 ? '↓' : '');
+    if (Math.abs(pct) > 2) td.classList.add('big', pct > 0 ? 'up' : 'dn');
+    return td;
+  }
+  function logViews(d, a, p, w, wp) {
+    const wk = logAdd(d, -7), out = [];
+    const day = LOG_PAN.map((pn) => logUse(a, p, pn)), last = LOG_PAN.map((pn) => logUse(w, wp, pn));
+    const t1 = logTable(['반', '하루 kWh', '지난주 (' + md(wk) + ' ' + dow(wk) + ')', '증감']);
+    LOG_PAN.forEach((pn, i) => { const tr = el('tr'); tr.append(el('td', 'it', pn[1]), logTd(day[i]), logTd(last[i]), logChg(day[i], last[i])); t1.append(tr); });
+    const lvA = logSumLv(day.slice(1)), lvB = logSumLv(last.slice(1));
+    const s1 = el('tr', 'sum'); s1.append(el('td', 'it', 'LV 합계'), logTd(lvA), logTd(lvB), logChg(lvA, lvB)); t1.append(s1);
+    const s2 = el('tr'); s2.append(el('td', 'it', '특고압 − LV 합계'));
+    if (typeof day[0] === 'number' && typeof lvA === 'number') { s2.append(logTd((day[0] - lvA >= 0 ? '+' : '−') + logFmt(Math.abs(day[0] - lvA))), el('td', 'v'), logTd(lvA ? ((day[0] - lvA) / lvA * 100 >= 0 ? '+' : '') + ((day[0] - lvA) / lvA * 100).toFixed(1) + '%' : '')); } else s2.append(el('td', 'v'), el('td', 'v'), el('td', 'v'));
+    t1.append(s2);
+    out.push(logCard('반별 하루 사용량 — 지난주 같은 요일 대비', 'var(--c2)', t1, el('div', 'log-note', '굵은 글자 = ±2% 넘음 (빨강 ↑ 늘어남 · 파랑 ↓ 줄어듦). 작년 비교는 매일 전력 점검 보고서. 특고압·LV-4·LV-5 지침은 화면이 100 kWh 단위라 하루 ±100 kWh 흔들림')));
+    if (LOG_TIMES.length > 1) {
+      const t2 = logTable(['반', ...logLabels(), '하루']); const segs = LOG_PAN.map((pn) => logSegs(a, p, pn));
+      LOG_PAN.forEach((pn, i) => { const tr = el('tr'); tr.append(el('td', 'it', pn[1])); segs[i].forEach((v) => tr.append(logTd(v))); tr.append(logTd(day[i])); t2.append(tr); });
+      const s3 = el('tr', 'sum'); s3.append(el('td', 'it', 'LV 합계')); LOG_TIMES.forEach((t, j) => s3.append(logTd(logSumLv(segs.slice(1).map((x) => x[j]))))); s3.append(logTd(lvA)); t2.append(s3);
+      out.push(logCard('시간대별 사용량 kWh — 몇 시에 늘었나', 'var(--c1)', t2, el('div', 'log-note', '0 ~ 10시 = 전날 24시 → 10시. 시간대 칸은 ±100 kWh 오차 (특고압·LV-4·LV-5)')));
+    }
+    const passed = (t) => Date.now() > utc(d) + (Number(t) - 9) * 3600e3 + 3600e3;
+    const t3 = logTable(['반', '단위', '전날 24시', ...LOG_TIMES.map((t) => t + '시'), '교체·초기화']);
+    LOG_PAN.forEach((pn) => {
+      const [id, name, , unit] = pn; const tr = el('tr'); tr.append(el('td', 'it', name), el('td', 'v', unit), logTd(logVal(p, id, '24')));
+      let before = logNum(logVal(p, id, '24'));
+      LOG_TIMES.forEach((t) => {
+        const raw = logVal(a, id, t), v = logNum(raw); let cls = '';
+        if (v == null) cls = passed(t) ? 'yel' : '';
+        else if (Number.isNaN(v) || (!(a && a.x[id]) && before != null && !Number.isNaN(before) && v < before)) cls = 'red';
+        if (v != null && !Number.isNaN(v)) before = v;
+        tr.append(logTd(raw, cls));
+      });
+      tr.append(logTd(a && a.x[id] ? 'O' : '')); t3.append(tr);
+    });
+    out.push(logCard('입력된 지침 (Wh 화면 값)', '#F2B95C', t3, el('div', 'log-note', '빨강 = 앞 시각·전날보다 작은 지침 · 노랑 = 지난 시각인데 빈칸')));
+    return out;
+  }
+  async function renderLog() {
+    if (!logDate) logDate = kstToday();
+    const d = logDate, box = $('logBody');
+    $('logDate').value = d; $('logDate').max = kstToday(); $('logDow').textContent = '(' + dow(d) + ')'; $('logNext').disabled = d >= kstToday();
+    box.replaceChildren(el('div', 'log-note', '불러오는 중…'));
+    try {
+      if (!(await logInit())) { box.replaceChildren(el('div', 'log-note', '일지 열쇠가 아직 판에 없음 (log_web_read.py put-key)')); return; }
+      const wk = logAdd(d, -7);
+      const [a, p, w, wp] = await Promise.all([logDay(d), logDay(logAdd(d, -1)), logDay(wk), logDay(logAdd(wk, -1))]);
+      if (d !== logDate) return;
+      $('logRo').textContent = '읽기만' + (a && a.u ? ' · 마지막 입력 ' + stamp(a.u) : ' · 입력 없음');
+      box.replaceChildren(...logViews(d, a, p, w, wp));
+    } catch (e) { box.replaceChildren(el('div', 'log-note', '못 불러옴 : ' + (e && e.message ? e.message : e))); }
+  }
+  async function logExcel(month) {
+    const b = $(month ? 'logXm' : 'logXd'); const old = b.textContent; b.disabled = true; b.textContent = '만드는 중…';
+    try {
+      if (!(await logInit())) throw new Error('일지 열쇠 없음');
+      await loadJs('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+      const ym = logDate.slice(0, 7); let ds = [logDate];
+      if (month) { ds = []; for (let x = ym + '-01'; x.slice(0, 7) === ym && x <= kstToday(); x = logAdd(x, 1)) ds.push(x); }
+      const want = [logAdd(ds[0], -1), ...ds], got = {};
+      for (let i = 0; i < want.length; i += 4) { const part = want.slice(i, i + 4); const r = await Promise.all(part.map(logDay)); part.forEach((k, j) => { got[k] = r[j]; }); }
+      const head = ['날짜', '요일', '반', '단위', '전날 24시', ...LOG_TIMES.map((t) => t + '시'), '교체·초기화', ...logLabels().map((l) => l + ' kWh'), ...(LOG_TIMES.length > 1 ? ['하루 kWh'] : [])];
+      const cv = (v) => (v === 'x' ? '교체' : v === 'neg' ? '확인' : v);
+      const nv = (s) => { const v = logNum(s); return v == null || Number.isNaN(v) ? s : v; };
+      const aoa = [head];
+      ds.forEach((d) => { const a = got[d], p = got[logAdd(d, -1)]; LOG_PAN.forEach((pn) => { const [id, name, , unit] = pn; aoa.push([d, dow(d), name, unit, nv(logVal(p, id, '24')), ...LOG_TIMES.map((t) => nv(logVal(a, id, t))), a && a.x[id] ? 'O' : '', ...logSegs(a, p, pn).map(cv), ...(LOG_TIMES.length > 1 ? [cv(logUse(a, p, pn))] : [])]); }); });
+      const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = head.map((h, i) => ({ wch: i === 2 ? 16 : 12 }));
+      const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, month ? ym : logDate);
+      XLSX.writeFile(wb, '부산메리츠타워_수변전일지_' + (month ? ym : logDate) + '.xlsx');
+    } catch (e) { toast('엑셀 못 만듦 : ' + (e && e.message ? e.message : e)); }
+    b.disabled = false; b.textContent = old;
   }
   // 페이지 3 : 자료실 (사용자 10/30 "나는 판 대화로 파일 보내고, 너는 자료실 탭 만들어서 내가 받고", "자료는 그대로 놔두고 자료실 탭이 따로") — files 목록(최근 것 먼저), board.py send-file 이 올림
   let fileIdx = [];
@@ -1396,6 +1540,13 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     $('tabDay').addEventListener('click', () => setTab('day'));
     $('tabRep').addEventListener('click', () => { if (document.body.dataset.tab === 'rep' && repOpen) { closeReport(); toTop(); } else setTab('rep'); });   // 보고서 보다가 '보고서' 한 번 더 누르면 목록으로 (사용자 10/29 "자료를 한 번 더 누르면 목록으로 가던가")
     $('tabFile').addEventListener('click', () => setTab('file'));
+    $('tabLog').addEventListener('click', () => setTab('log'));
+    $('logPrev').addEventListener('click', () => { logDate = logAdd(logDate || kstToday(), -1); renderLog(); });
+    $('logNext').addEventListener('click', () => { const n = logAdd(logDate || kstToday(), 1); if (n <= kstToday()) { logDate = n; renderLog(); } });
+    $('logToday').addEventListener('click', () => { logDate = kstToday(); renderLog(); });
+    $('logDate').addEventListener('change', () => { const v = $('logDate').value; if (isDate(v) && v <= kstToday()) { logDate = v; renderLog(); } });
+    $('logXd').addEventListener('click', () => logExcel(false));
+    $('logXm').addEventListener('click', () => logExcel(true));
     $('daySel').addEventListener('change', () => go($('daySel').value));
     $('prevDay').addEventListener('click', () => { const i = dates.indexOf(viewDate); if (i >= 0 && i < dates.length - 1) go(dates[i + 1]); });
     $('nextDay').addEventListener('click', () => { const i = dates.indexOf(viewDate); if (i > 0) go(dates[i - 1]); });
@@ -1421,7 +1572,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     subs.repIndex = sub('rep_index', (v) => { repIndex = arr(v && v.list); $('repCount').hidden = !repIndex.length; $('repCount').textContent = repIndex.length; if (document.body.dataset.tab === 'rep' && !repOpen) renderReports(); });
     subs.files = sub('files', (v) => { fileIdx = arr(v && v.list); $('fileCount').hidden = !fileIdx.length; $('fileCount').textContent = fileIdx.length; if (document.body.dataset.tab === 'file') renderFiles(); });
     let t0 = 'day'; try { t0 = localStorage.getItem('mb_tab') || 'day'; } catch (e) {}
-    setTab(['rep', 'file'].includes(t0) ? t0 : 'day');
+    setTab(['rep', 'file', 'log'].includes(t0) ? t0 : 'day');
     $('chatForm').addEventListener('submit', (e) => { e.preventDefault(); sendChat(); });
     $('chatText').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendChat(); } });
     $('chatText').addEventListener('focus', openDock);
