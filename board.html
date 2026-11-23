@@ -1082,7 +1082,8 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   // 시설팀 입력 페이지(새 저장소 index.html)가 ppld 'sl_<일지 열쇠 해시 16>_<날짜>'에 일지 열쇠로 암호화해 넣은 지침을 풂 — 일지 열쇠는 판 문서 sublog_key(판 키로 암호화)
   const LOG_TIMES = ['10', '14', '18', '24'];   // 입력 페이지 TIMES 와 같게
   const LOG_PAN = [['HV', '특고압 HV-4', 1000, 'MWh'], ['LV4', 'LV-4 전등·전열', 1000, 'MWh'], ['LV5', 'LV-5 냉·난방', 1000, 'MWh'], ['LV9', 'LV-9 일반동력', 1, 'kWh'], ['LV10', 'LV-10 비상동력', 1000, 'MWh']];
-  let logKey = null, logPfx = '', logDate = '', logCache = {};
+  let logKey = null, logPfx = '', logDate = '', logCache = {}, logLy;   // logLy = 판 문서 sublog_ly (작년 엑셀 값) — undefined 아직 안 받음, null 판에 없음
+  const LOG_WEB = '2026-11-20';   // 일지 웹 시작 — 이 날부터의 작년 값은 일지 웹 문서에서 (log_web_read.py WEB_START 와 같게)
   const logAdd = (s, n) => isoDay(utc(s) + n * 864e5);
   const logNum = (s) => { s = String(s == null ? '' : s).replace(/[,\s]/g, ''); return s === '' ? null : (/^-?\d+(\.\d+)?$/.test(s) ? Number(s) : NaN); };
   const logFmt = (n) => Math.round(n).toLocaleString('ko-KR');
@@ -1183,17 +1184,25 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     if (Math.abs(pct) > 2) td.classList.add('big', pct > 0 ? 'up' : 'dn');
     return td;
   }
-  function logViews(d, a, p, w, wp) {
-    const wk = logAdd(d, -7), out = [];
-    const day = LOG_PAN.map((pn) => logUse(a, p, pn)), last = LOG_PAN.map((pn) => logUse(w, wp, pn));
-    const t1 = logTable(['반', '하루 kWh', '지난주 (' + md(wk) + ' ' + dow(wk) + ')', '증감']);
-    LOG_PAN.forEach((pn, i) => { const tr = el('tr'); tr.append(el('td', 'it', pn[1]), logTd(day[i]), logTd(last[i]), logChg(day[i], last[i])); t1.append(tr); });
-    const lvA = logSumLv(day.slice(1)), lvB = logSumLv(last.slice(1));
-    const s1 = el('tr', 'sum'); s1.append(el('td', 'it', 'LV 합계'), logTd(lvA), logTd(lvB), logChg(lvA, lvB)); t1.append(s1);
+  async function logLyRow(k) {   // 작년 같은 요일(364일 전) 반별 하루 kWh {v, bad, none} — 일지 웹 시작 전은 판 문서 sublog_ly (엑셀 값, 위키 스크립트/전력 점검/log_ly.py), 그 뒤는 일지 웹 문서 (사용자 11/23 "지난해랑 비교해서 증감량 비교도 중요한데")
+    if (k >= LOG_WEB) { const [a, p] = await Promise.all([logDay(k), logDay(logAdd(k, -1))]); return { v: LOG_PAN.map((pn) => logUse(a, p, pn)), bad: [] }; }
+    if (logLy === undefined) { const s = await ref('sublog_ly').get(); logLy = (s.exists && typeof s.data().v === 'string' && (await dec(s.data().v))) || null; }
+    const r = logLy && logLy.d && logLy.d[k];
+    return { v: LOG_PAN.map((pn, i) => (r && r[i] != null ? r[i] : null)), bad: ((logLy && logLy.bad) || []).filter((b) => k >= b[1] && k <= b[2]).map((b) => b[0]), none: !logLy };
+  }
+  function logViews(d, a, p, w, wp, ly) {
+    const wk = logAdd(d, -7), lk = logAdd(d, -364), out = [];
+    const day = LOG_PAN.map((pn) => logUse(a, p, pn)), last = LOG_PAN.map((pn) => logUse(w, wp, pn)), lyv = ly.v;
+    const lyChg = (x, y, ids) => (ids.some((id) => ly.bad.includes(id)) ? logTd('안 믿음') : logChg(x, y));   // 2025년 1 ~ 3월 LV-4 (계량 문제로 보임)
+    const t1 = logTable(['반', '하루 kWh', '지난주 (' + md(wk) + ' ' + dow(wk) + ')', '증감', '작년 (' + md(lk) + ' ' + dow(lk) + ')', '증감']);
+    LOG_PAN.forEach((pn, i) => { const tr = el('tr'); tr.append(el('td', 'it', pn[1]), logTd(day[i]), logTd(last[i]), logChg(day[i], last[i]), logTd(lyv[i]), lyChg(day[i], lyv[i], [pn[0]])); t1.append(tr); });
+    const lvA = logSumLv(day.slice(1)), lvB = logSumLv(last.slice(1)), lvC = logSumLv(lyv.slice(1));
+    const s1 = el('tr', 'sum'); s1.append(el('td', 'it', 'LV 합계'), logTd(lvA), logTd(lvB), logChg(lvA, lvB), logTd(lvC), lyChg(lvA, lvC, LOG_PAN.slice(1).map((pn) => pn[0]))); t1.append(s1);
     const s2 = el('tr'); s2.append(el('td', 'it', '특고압 − LV 합계'));
     if (typeof day[0] === 'number' && typeof lvA === 'number') { s2.append(logTd((day[0] - lvA >= 0 ? '+' : '−') + logFmt(Math.abs(day[0] - lvA))), el('td', 'v'), logTd(lvA ? ((day[0] - lvA) / lvA * 100 >= 0 ? '+' : '') + ((day[0] - lvA) / lvA * 100).toFixed(1) + '%' : '')); } else s2.append(el('td', 'v'), el('td', 'v'), el('td', 'v'));
+    s2.append(el('td', 'v'), el('td', 'v'));
     t1.append(s2);
-    out.push(logCard('반별 하루 사용량 — 지난주 같은 요일 대비', 'var(--c2)', t1, el('div', 'log-note', '굵은 글자 = ±2% 넘음 (빨강 ↑ 늘어남 · 파랑 ↓ 줄어듦). 작년 비교는 매일 전력 점검 보고서. 특고압·LV-4·LV-5 지침은 화면이 100 kWh 단위라 하루 ±100 kWh 흔들림')));
+    out.push(logCard('반별 하루 사용량 — 지난주·작년 같은 요일 대비', 'var(--c2)', t1, el('div', 'log-note', '굵은 글자 = ±2% 넘음 (빨강 ↑ 늘어남 · 파랑 ↓ 줄어듦). 작년 = 364일 전 같은 요일' +(ly.none ? ' — 작년 값이 아직 판에 없음' : '') + (ly.bad.length ? '. 2025년 1 ~ 3월 LV-4는 계량 문제로 보여 작년 비교 안 믿음' : '') + '. 특고압·LV-4·LV-5 지침은 화면이 100 kWh 단위라 하루 ±100 kWh 흔들림')));
     if (LOG_TIMES.length > 1) {
       const t2 = logTable(['반', ...logLabels(), '하루']); const segs = LOG_PAN.map((pn) => logSegs(a, p, pn));
       LOG_PAN.forEach((pn, i) => { const tr = el('tr'); tr.append(el('td', 'it', pn[1])); segs[i].forEach((v) => tr.append(logTd(v))); tr.append(logTd(day[i])); t2.append(tr); });
@@ -1225,10 +1234,10 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     try {
       if (!(await logInit())) { box.replaceChildren(el('div', 'log-note', '일지 열쇠가 아직 판에 없음 (log_web_read.py put-key)')); return; }
       const wk = logAdd(d, -7);
-      const [a, p, w, wp] = await Promise.all([logDay(d), logDay(logAdd(d, -1)), logDay(wk), logDay(logAdd(wk, -1))]);
+      const [a, p, w, wp, ly] = await Promise.all([logDay(d), logDay(logAdd(d, -1)), logDay(wk), logDay(logAdd(wk, -1)), logLyRow(logAdd(d, -364))]);
       if (d !== logDate) return;
       $('logRo').textContent = '읽기만' + (a && a.u ? ' · 마지막 입력 ' + stamp(a.u) : ' · 입력 없음');
-      box.replaceChildren(...logViews(d, a, p, w, wp));
+      box.replaceChildren(...logViews(d, a, p, w, wp, ly));
     } catch (e) { box.replaceChildren(el('div', 'log-note', '못 불러옴 : ' + (e && e.message ? e.message : e))); }
   }
   // 엑셀 받기 = 원래 수변전일지 꼴 (사용자 11/20 "기존 수변전일지처럼 나오겐 안되나?", "한시트에 한달치 … 일별은 엑셀 다운 필요없고", "년도별은 월별로 시트 나눠진거 합쳐서 … 내가준 수변전일지와 같게", "수변전일지 처럼 아래로 내려가는 식으로 날짜별로")
