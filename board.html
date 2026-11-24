@@ -370,6 +370,8 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
 /* 대화 */
 /* 대화 : 화면 아래에 늘 붙은 입력줄, 누르면 위로 대화 기록이 펼쳐짐 (사용자 10/28) */
 .dock{position:fixed;left:0;right:0;bottom:0;z-index:15;padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:color-mix(in srgb,var(--bg) 86%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-top:1px solid var(--line)}
+/* 11/24 자판을 모르는 앱 (kb-guess, 아래 kbGuessCheck) : 목록 끝 할 일 칸도 화면 위쪽까지 올릴 수 있게 아래 여백을 늘림 */
+body.kb-guess .wrap{padding-bottom:calc(50vh + 100px)}
 .dock-in{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
 .dock-panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 12px 10px;box-shadow:0 -10px 30px color-mix(in srgb,#000 45%,transparent)}
 .dock-h{display:flex;align-items:center;gap:10px;margin:0 2px 8px}
@@ -1240,12 +1242,13 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       box.replaceChildren(...logViews(d, a, p, w, wp, ly));
     } catch (e) { box.replaceChildren(el('div', 'log-note', '못 불러옴 : ' + (e && e.message ? e.message : e))); }
   }
-  // 엑셀 받기 = 원래 수변전일지 꼴 (사용자 11/20 "기존 수변전일지처럼 나오겐 안되나?", "한시트에 한달치 … 일별은 엑셀 다운 필요없고", "년도별은 월별로 시트 나눠진거 합쳐서 … 내가준 수변전일지와 같게", "수변전일지 처럼 아래로 내려가는 식으로 날짜별로")
-  // 양식 = 판 문서 sublog_form (사용자가 준 수변전일지 하루 블록 28줄의 서식·병합·글자 + styles·theme, 판 키로 암호화 — 업무판/log_form.py 가 넣음)
-  // 이달 = 시트 하나에 1일 ~ 말일 블록을 위에서 아래로 · 올해 = 1월 ~ 이번 달 시트 (이름은 준 파일 그대로) · 웹은 지침만 받음 → 반별 금일지침(24시)·전일지침·지시차·사용량만 채우고 kW·전압·전류·온도·한전 계량기·근무자는 빈칸
-  // 식 : 지시차 = 금일 − 전일, 사용량 = 지시차 × 배율 (특고압·LV-4·5·10 ×1000, LV-9 ×1), 전일지침 = 앞 블록 금일지침 (1일은 전날 웹 값) — 빈칸이면 계산 칸도 빈칸 (IF)
-  // 한셀 : 글자는 sharedStrings (inlineStr 쓰면 한셀이 엉뚱한 글자를 보임), 계산 값도 같이 적음 (다시 계산 안 해도 맞게)
-  const LOG_ROW = [['HV', 13, 1000], ['LV4', 15, 1000], ['LV5', 16, 1000], ['LV9', 17, 1], ['LV10', 18, 1000]];   // 반, 블록 안 줄 (T 금일·W 전일·Z 지시차·AB 사용량), 배율
+  // 엑셀 받기 = 수변전일지 모양 표에 우리 값만 (사용자 11/24 판 "이렇게 완전 그양식을 써라는건 아니고 우리 정보를 저런 표로 너가 만들어서 달라는거야 저건 그대로 쓰면 빈칸도 많고 값을 못넣잖아" — 11/20 원래 양식 그대로 판은 볼트 기록 절)
+  // 모양은 원래 양식에서 빌림 = 판 문서 sublog_form (머리 1 ~ 3줄 '수 변 전 일 지'·날짜 요일·결재 칸, 반 이름·kVA 글자, 열 너비·인쇄 설정, styles·theme — 판 키로 암호화, 업무판/log_form.py 가 넣음) + 칸 꼴 몇 개 덧붙임 (logStyles : 머리 살구색·값 흰색·합계 하늘색 = 원래 색, 가는 테두리 네 변)
+  // 하루 블록 21줄 : 시간별 표 (10·14·18·24시 + 하루 계 × 반마다 지침·사용량 + LV 합계) → 반별 표 (금일·전일 지침, 지시차, 사용량 + LV 합계, 특고압 − LV 합계) — 전압·전류·kW·TR 온도·한전 계량기·점등시간·날씨·근무자 칸은 안 만듦 (우리 값 없음)
+  // 식 : 구간 사용량 = (그 시각 지침 − 앞 시각 지침) × 배율 (10시는 전날 24시부터), 하루 = (24시 − 전날 24시) × 배율, 배율 특고압·LV-4·5·10 ×1000, LV-9 ×1, 교체·초기화한 날은 '교체' — 빈칸이면 계산 칸도 빈칸 (IF — 한셀이 다시 계산해도 빈칸이 0이 안 되게)
+  // 이달 = 시트 하나에 1일 ~ 말일 블록 위 → 아래 · 올해 = 1월 ~ 이번 달 시트 (이름은 원래 파일 그대로) · 인쇄 하루 한 장 · 한셀 : 글자는 sharedStrings (inlineStr 쓰면 한셀이 엉뚱한 글자를 보임), 계산 값도 같이 적음
+  const XLS_PAN = [['HV', 2, 1000, 'MWh', '특고압 (HV-4)'], ['LV4', 7, 1000, 'MWh', '전등전열 (LV-4)'], ['LV5', 12, 1000, 'MWh', '냉난방 (LV-5)'], ['LV9', 17, 1, 'kWh', '일반동력 (LV-9)'], ['LV10', 22, 1000, 'MWh', '비상동력 (LV-10)']];   // 반, 시간별 표 첫 열 (지침 3칸 + 사용량 2칸), 배율, 지침 단위, 반별 표 이름
+  const XLS_H = 21;   // 하루 블록 줄 수 (시각은 LOG_TIMES)
   let logForm = null;
   async function logFormGet() {
     if (logForm) return logForm;
@@ -1263,51 +1266,127 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   }
   const xesc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   const colN = (n) => { let s = ''; for (; n > 0; n = Math.floor((n - 1) / 26)) s = String.fromCharCode(65 + (n - 1) % 26) + s; return s; };
-  function logSheetXml(form, ym, days, str, first) {   // 한 달 시트 — 하루 블록을 위에서 아래로
-    const [y, m] = ym.split('-').map(Number), n = new Date(Date.UTC(y, m, 0)).getUTCDate(), H = form.h;
-    const rows = [], merges = [], brks = [];
-    const T24 = (o, id) => { if (!o || !o.r[id]) return null; const v = logNum(o.r[id]['24']); return v == null || Number.isNaN(v) ? null : v; };
+  function logStyles(css) {   // 원래 양식 styles.xml + 우리 표 칸 꼴 (글꼴·살구색 = 원래 머리 칸 s516, 흰색·소수 둘째 자리 = 원래 금일지침 칸 s596, 하늘색 = 원래 금일사용량 칸 s586)
+    const cx = css.match(/<cellXfs[^>]*>([\s\S]*?)<\/cellXfs>/)[1].match(/<xf\b[^>]*?(?:\/>|>[\s\S]*?<\/xf>)/g);
+    const at = (i, k) => +cx[i].match(new RegExp('\\b' + k + '="(\\d+)"'))[1];
+    const font = at(516, 'fontId'), peach = at(516, 'fillId'), white = at(596, 'fillId'), blue = at(586, 'fillId'), nf2 = at(596, 'numFmtId');
+    const nfMax = Math.max(...[...css.match(/<numFmts[^>]*>[\s\S]*?<\/numFmts>/)[0].matchAll(/numFmtId="(\d+)"/g)].map((m) => +m[1]));
+    const nf0 = nfMax + 1, nfp = nfMax + 2, bd = +css.match(/<borders count="(\d+)"/)[1], x0 = cx.length;
+    const xf = (nf, fill, h, wrap) => '<xf numFmtId="' + nf + '" fontId="' + font + '" fillId="' + fill + '" borderId="' + bd + '" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="' + h + '" vertical="center"' + (wrap ? ' wrapText="1"' : '') + '/></xf>';
+    const add = [xf(0, peach, 'center', 1), xf(nf2, white, 'right'), xf(nf0, white, 'right'), xf(0, white, 'center'), xf(nf0, blue, 'right'), xf(0, blue, 'center'), xf(nfp, blue, 'right')];
+    const line = (k) => '<' + k + ' style="thin"><color indexed="64"/></' + k + '>';
+    const xml = css
+      .replace(/<numFmts count="(\d+)">/, (m, k) => '<numFmts count="' + (+k + 2) + '"><numFmt numFmtId="' + nf0 + '" formatCode="#,##0_);[Red]\\(#,##0\\)"/><numFmt numFmtId="' + nfp + '" formatCode="+0.0%;[Red]\\-0.0%;0.0%"/>')
+      .replace(/<borders count="(\d+)">/, (m, k) => '<borders count="' + (+k + 1) + '">')
+      .replace('</borders>', '<border>' + line('left') + line('right') + line('top') + line('bottom') + '<diagonal/></border></borders>')
+      .replace(/<cellXfs count="(\d+)">/, (m, k) => '<cellXfs count="' + (+k + add.length) + '">')
+      .replace('</cellXfs>', add.join('') + '</cellXfs>');
+    return { xml, S: { hdr: x0, n2: x0 + 1, n0: x0 + 2, txt: x0 + 3, s0: x0 + 4, stxt: x0 + 5, pct: x0 + 6 } };
+  }
+  function logSheetXml(form, ym, days, str, first, S) {   // 한 달 시트 — 하루 블록을 위에서 아래로
+    const [y, m] = ym.split('-').map(Number), n = new Date(Date.UTC(y, m, 0)).getUTCDate(), H = XLS_H;
+    const lab = (c, r) => { const row = form.rows.find((x) => x.r === r), cell = row && row.cells.find((x) => x[0] === c); return (cell && cell[2]) || ''; };
+    const head = form.rows.filter((x) => x.r <= 3), rows = [], merges = [], brks = [];
+    const val = (o, id, t) => { if (!o || !o.r[id]) return null; const v = logNum(o.r[id][t]); return v == null || Number.isNaN(v) ? null : v; };
+    const rnd = (x) => Math.round(x * 1e6) / 1e6, num = (x) => typeof x === 'number';
     for (let i = 0; i < n; i++) {
-      const d = ym + '-' + String(i + 1).padStart(2, '0'), b = i * H, a = days[d], p = days[logAdd(d, -1)];
-      const put = {}, at = (c, r) => colN(c) + (b + r), pv = (c, r) => colN(c) + (b - H + r);   // put['T13'] = {v} | {f, v}
-      put.A2 = { v: (utc(d) - Date.UTC(1899, 11, 30)) / 864e5 };   // 날짜 (엑셀 날짜 수)
-      LOG_ROW.forEach(([id, r, mul]) => {
-        const t = T24(a, id), w = T24(p, id), z = t != null && w != null ? t - w : '';
-        if (t != null) put['T' + r] = { v: t };
-        put['W' + r] = i ? { f: 'IF(' + pv(20, r) + '="","",' + pv(20, r) + ')', v: w == null ? '' : w } : (w != null ? { v: w } : null);   // =T앞 만 쓰면 앞날이 빈칸일 때 0이 돼 사용량이 튐 (한셀 11/7 시험)
-        if (a && a.x[id]) { put['Z' + r] = put['AB' + r] = { s: '교체' }; return; }   // 계량기 교체·초기화한 날 = 웹 화면처럼 '교체' (빼면 큰 음수)
-        put['Z' + r] = { f: 'IF(OR(' + at(20, r) + '="",' + at(23, r) + '=""),"",' + at(20, r) + '-' + at(23, r) + ')', v: z };
-        put['AB' + r] = { f: 'IF(' + at(26, r) + '="","",' + at(26, r) + '*' + mul + ')', v: z === '' ? '' : z * mul };
+      const d = ym + '-' + String(i + 1).padStart(2, '0'), b = i * H, a = days[d], p = days[logAdd(d, -1)], X = (id) => !!(a && a.x[id]);
+      const G = Array.from({ length: H + 1 }, () => new Map()), at = (c, r) => colN(c) + (b + r);
+      const P24 = (c) => (i ? colN(c) + (b - H + 11) : null);   // 전날 24시 지침 칸 (1일은 시트에 없어서 값으로)
+      const box = (c1, r1, c2, r2, s, o) => {
+        for (let r = r1; r <= r2; r++) for (let c = c1; c <= c2; c++) G[r].set(c, [s, r === r1 && c === c1 ? o || null : null]);
+        if (c2 > c1 || r2 > r1) merges.push('<mergeCell ref="' + at(c1, r1) + ':' + at(c2, r2) + '"/>');
+      };
+      const use = (cur, P, pv, mul, cv) => (P ? { f: 'IF(OR(' + cur + '="",' + P + '=""),"",(' + cur + '-' + P + ')*' + mul + ')', v: cv } : pv == null ? null : { f: 'IF(' + cur + '="","",(' + cur + '-' + pv + ')*' + mul + ')', v: cv });
+      // 1 ~ 3줄 = 원래 양식 머리 그대로 (A2 날짜 요일, 결재 칸) — 날씨 글자만 뺌
+      head.forEach((row) => row.cells.forEach(([c, s, txt]) => G[row.r].set(c, [s, row.r === 2 && c === 1 ? { v: (utc(d) - Date.UTC(1899, 11, 30)) / 864e5 } : txt && !(row.r === 2 && c === 8) ? { s: txt } : null])));
+      form.merges.filter((g) => g[3] <= 3).forEach(([c1, r1, c2, r2]) => merges.push('<mergeCell ref="' + at(c1, r1) + ':' + at(c2, r2) + '"/>'));
+      // 4 ~ 12줄 = 시간별 표
+      const uv = { 8: {}, 9: {}, 10: {}, 11: {}, 12: {} };   // 줄 → 반 → 사용량 (LV 합계 계산 값용)
+      box(1, 4, 1, 7, S.hdr, { s: lab(1, 4) || '시간별' });
+      LOG_TIMES.forEach((t, k) => box(1, 8 + k, 1, 8 + k, S.hdr, { s: lab(1, 8 + k) || t + ':00' }));
+      box(1, 12, 1, 12, S.hdr, { s: '하루 계' });
+      XLS_PAN.forEach(([id, c0, mul, unit]) => {
+        const kva = lab(c0, 5);
+        if (kva) { box(c0, 4, c0 + 4, 4, S.hdr, { s: lab(c0, 4) }); box(c0, 5, c0 + 4, 5, S.hdr, { s: kva }); } else box(c0, 4, c0 + 4, 5, S.hdr, { s: lab(c0, 4) });
+        box(c0, 6, c0 + 2, 6, S.hdr, { s: '지침' }); box(c0 + 3, 6, c0 + 4, 6, S.hdr, { s: '사용량' });
+        box(c0, 7, c0 + 2, 7, S.hdr, { s: unit }); box(c0 + 3, 7, c0 + 4, 7, S.hdr, { s: 'kWh' });
+        LOG_TIMES.forEach((t, k) => {
+          const r = 8 + k, v = val(a, id, t);
+          box(c0, r, c0 + 2, r, S.n2, v == null ? null : { v });
+          if (X(id)) { box(c0 + 3, r, c0 + 4, r, S.txt, { s: '교체' }); uv[r][id] = null; return; }
+          const pv = k ? val(a, id, LOG_TIMES[k - 1]) : val(p, id, '24'), cv = v == null || pv == null ? '' : rnd((v - pv) * mul);
+          box(c0 + 3, r, c0 + 4, r, S.n0, use(at(c0, r), k ? at(c0, r - 1) : P24(c0), pv, mul, cv)); uv[r][id] = cv;
+        });
+        box(c0, 12, c0 + 2, 12, S.stxt);
+        if (X(id)) { box(c0 + 3, 12, c0 + 4, 12, S.stxt, { s: '교체' }); uv[12][id] = null; return; }
+        const v = val(a, id, '24'), pv = val(p, id, '24'), cv = v == null || pv == null ? '' : rnd((v - pv) * mul);
+        box(c0 + 3, 12, c0 + 4, 12, S.s0, use(at(c0, 11), P24(c0), pv, mul, cv)); uv[12][id] = cv;
       });
-      for (const r of [15, 16, 17]) {   // 한전 계량기 (웹엔 없음 — 손으로 적으면 계산되게 원래 식, 빈칸이면 빈칸)
-        if (i) put['E' + r] = { f: 'IF(' + pv(2, r) + '="","",' + pv(2, r) + ')', v: '' };
-        put['H' + r] = { f: 'IF(OR(' + at(2, r) + '="",' + at(5, r) + '=""),"",(' + at(2, r) + '-' + at(5, r) + ')*3600)', v: '' };
-        if (i) put['K' + r] = { f: 'IF(' + pv(14, r) + '="","",' + pv(14, r) + ')', v: '' };
-        put['N' + r] = { f: 'IF(' + at(8, r) + '="","",' + at(8, r) + '+IF(' + at(11, r) + '="",0,' + at(11, r) + '))', v: '' };
+      box(27, 4, 30, 5, S.hdr, { s: 'LV 합계' }); box(27, 6, 30, 6, S.hdr, { s: '사용량' }); box(27, 7, 30, 7, S.hdr, { s: 'kWh' });
+      for (let r = 8; r <= 12; r++) {
+        const us = XLS_PAN.slice(1).map(([, c0]) => at(c0 + 3, r)), xs = XLS_PAN.slice(1).map(([id]) => uv[r][id]);
+        box(27, r, 30, r, S.s0, { f: 'IF(COUNT(' + us.join(',') + ')=4,' + us.join('+') + ',"")', v: xs.every(num) ? rnd(xs.reduce((s2, x) => s2 + x, 0)) : '' });
       }
-      for (const [c, c2] of [[2, 4], [5, 7], [8, 10], [14, 16]]) { const rg = at(c, 15) + ':' + at(c2, 17); put[colN(c) + 18] = { f: 'IF(COUNT(' + rg + ')=0,"",SUM(' + rg + '))', v: '' }; }
-      if (i) put.K18 = { f: 'IF(' + pv(14, 18) + '="","",' + pv(14, 18) + ')', v: '' };
-      for (const row of form.rows) {
-        const R = b + row.r, cs = new Map(row.cells.map((c) => [c[0], c]));
-        for (const k of Object.keys(put)) { const mm = k.match(/^([A-Z]+)(\d+)$/); if (+mm[2] === row.r && put[k]) { const ci = [...mm[1]].reduce((x, ch) => x * 26 + ch.charCodeAt(0) - 64, 0); if (!cs.has(ci)) cs.set(ci, [ci, 0, null]); } }
-        let xml = '<row r="' + R + '"' + (row.ht ? ' ht="' + row.ht + '" customHeight="1"' : '') + '>';
-        for (const [c, s, txt] of [...cs.values()].sort((x, z2) => x[0] - z2[0])) {
-          const ref2 = colN(c) + R, o = put[colN(c) + row.r];
-          if (o && o.f) xml += o.v === '' || o.v == null ? '<c r="' + ref2 + '" s="' + s + '" t="str"><f>' + xesc(o.f) + '</f><v></v></c>' : '<c r="' + ref2 + '" s="' + s + '"><f>' + xesc(o.f) + '</f><v>' + o.v + '</v></c>';
-          else if (o && o.s != null) xml += '<c r="' + ref2 + '" s="' + s + '" t="s"><v>' + str(o.s) + '</v></c>';
-          else if (o) xml += '<c r="' + ref2 + '" s="' + s + '"><v>' + o.v + '</v></c>';
-          else if (txt) xml += '<c r="' + ref2 + '" s="' + s + '" t="s"><v>' + str(txt) + '</v></c>';
-          else xml += '<c r="' + ref2 + '" s="' + s + '"/>';
+      // 14 ~ 21줄 = 반별 표 (13줄은 빈 띠)
+      [[1, 4, '구 분'], [5, 10, '금일지침'], [11, 16, '전일지침'], [17, 21, '지시차'], [22, 26, '사용량 (kWh)'], [27, 30, '비 고']].forEach(([c1, c2, t]) => box(c1, 14, c2, 14, S.hdr, { s: t }));
+      const du = {};
+      XLS_PAN.forEach(([id, c0, mul, , name], k) => {
+        const r = 15 + k, v = val(a, id, '24'), pv = val(p, id, '24'), cur = at(c0, 11), P = P24(c0);
+        box(1, r, 4, r, S.hdr, { s: name });
+        box(5, r, 10, r, S.n2, { f: 'IF(' + cur + '="","",' + cur + ')', v: v == null ? '' : v });
+        box(11, r, 16, r, S.n2, P ? { f: 'IF(' + P + '="","",' + P + ')', v: pv == null ? '' : pv } : pv == null ? null : { v: pv });
+        if (X(id)) { box(17, r, 21, r, S.txt, { s: '교체' }); box(22, r, 26, r, S.txt, { s: '교체' }); box(27, r, 30, r, S.txt, { s: '교체·초기화' }); du[id] = null; return; }
+        const E = at(5, r), K = at(11, r), Q = at(17, r), z = v == null || pv == null ? '' : rnd(v - pv);
+        box(17, r, 21, r, S.n2, { f: 'IF(OR(' + E + '="",' + K + '=""),"",' + E + '-' + K + ')', v: z });
+        box(22, r, 26, r, S.n0, { f: 'IF(' + Q + '="","",' + Q + '*' + mul + ')', v: z === '' ? '' : rnd(z * mul) }); du[id] = z === '' ? '' : rnd(z * mul);
+        box(27, r, 30, r, S.txt);
+      });
+      const V = (r) => at(22, r), lv = XLS_PAN.slice(1).map(([id]) => du[id]), lvs = lv.every(num) ? rnd(lv.reduce((s2, x) => s2 + x, 0)) : '', df = num(du.HV) && lvs !== '' ? rnd(du.HV - lvs) : '';
+      box(1, 20, 4, 20, S.hdr, { s: 'LV 합계' }); box(5, 20, 21, 20, S.stxt); box(27, 20, 30, 20, S.stxt);
+      box(22, 20, 26, 20, S.s0, { f: 'IF(COUNT(' + V(16) + ':' + V(19) + ')=4,SUM(' + V(16) + ':' + V(19) + '),"")', v: lvs });
+      box(1, 21, 4, 21, S.hdr, { s: '특고압 − LV 합계' }); box(5, 21, 21, 21, S.stxt);
+      box(22, 21, 26, 21, S.s0, { f: 'IF(COUNT(' + V(15) + ',' + V(20) + ')=2,' + V(15) + '-' + V(20) + ',"")', v: df });
+      box(27, 21, 30, 21, S.pct, { f: 'IF(AND(COUNT(' + V(21) + ',' + V(20) + ')=2,' + V(20) + '<>0),' + V(21) + '/' + V(20) + ',"")', v: df !== '' && lvs ? rnd(df / lvs) : '' });
+      // 줄 쓰기
+      for (let r = 1; r <= H; r++) {
+        const h = r <= 3 ? (head.find((x) => x.r === r) || {}).ht : r === 13 ? 6 : 19.5;
+        let xml = '<row r="' + (b + r) + '"' + (h ? ' ht="' + h + '" customHeight="1"' : '') + '>';
+        for (const [c, [s, o]] of [...G[r].entries()].sort((x, z2) => x[0] - z2[0])) {
+          const rf = at(c, r);
+          if (o && o.f) xml += o.v === '' || o.v == null ? '<c r="' + rf + '" s="' + s + '" t="str"><f>' + xesc(o.f) + '</f><v></v></c>' : '<c r="' + rf + '" s="' + s + '"><f>' + xesc(o.f) + '</f><v>' + o.v + '</v></c>';
+          else if (o && o.s != null) xml += '<c r="' + rf + '" s="' + s + '" t="s"><v>' + str(o.s) + '</v></c>';
+          else if (o && o.v != null && o.v !== '') xml += '<c r="' + rf + '" s="' + s + '"><v>' + o.v + '</v></c>';
+          else xml += '<c r="' + rf + '" s="' + s + '"/>';
         }
         rows.push(xml + '</row>');
       }
-      form.merges.forEach(([c1, r1, c2, r2]) => merges.push('<mergeCell ref="' + colN(c1) + (b + r1) + ':' + colN(c2) + (b + r2) + '"/>'));
       if (i < n - 1) brks.push('<brk id="' + (b + H) + '" max="16383" man="1"/>');   // 인쇄하면 하루 한 장
     }
     return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
       + '<dimension ref="A1:AD' + n * H + '"/><sheetViews><sheetView ' + (first ? 'tabSelected="1" ' : '') + 'zoomScaleNormal="100" workbookViewId="0"/></sheetViews>'
       + form.fmt + form.cols + '<sheetData>' + rows.join('') + '</sheetData><mergeCells count="' + merges.length + '">' + merges.join('') + '</mergeCells>'
       + form.page + '<rowBreaks count="' + brks.length + '" manualBreakCount="' + brks.length + '">' + brks.join('') + '</rowBreaks></worksheet>';
+  }
+  function logZip(form, yms, days) {   // 엑셀 파일 조립 (JSZip) — 화면·데이터 읽기와 떼어 둠 (견본·시험도 이 함수로)
+    const st = logStyles(form.styles), sst = [], sidx = new Map(), str = (t) => { if (!sidx.has(t)) { sidx.set(t, sst.length); sst.push(t); } return sidx.get(t); };
+    const zip = new JSZip(), N = yms.length, names = yms.map((ym) => form.names[+ym.slice(5) - 1] || (+ym.slice(5) + '월'));
+    yms.forEach((ym, i) => zip.file('xl/worksheets/sheet' + (i + 1) + '.xml', logSheetXml(form, ym, days, str, i === 0, st.S)));
+    const X = 'http://schemas.openxmlformats.org/', ct = 'application/vnd.openxmlformats-officedocument.';
+    zip.file('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="' + X + 'package/2006/content-types"><Default Extension="rels" ContentType="' + ct.replace('officedocument.', '') + 'package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>'
+      + '<Override PartName="/xl/workbook.xml" ContentType="' + ct + 'spreadsheetml.sheet.main+xml"/>' + yms.map((_, i) => '<Override PartName="/xl/worksheets/sheet' + (i + 1) + '.xml" ContentType="' + ct + 'spreadsheetml.worksheet+xml"/>').join('')
+      + '<Override PartName="/xl/theme/theme1.xml" ContentType="' + ct + 'theme+xml"/><Override PartName="/xl/styles.xml" ContentType="' + ct + 'spreadsheetml.styles+xml"/><Override PartName="/xl/sharedStrings.xml" ContentType="' + ct + 'spreadsheetml.sharedStrings+xml"/>'
+      + '<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="' + ct + 'extended-properties+xml"/></Types>');
+    zip.file('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="' + X + 'package/2006/relationships"><Relationship Id="rId1" Type="' + X + 'officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/><Relationship Id="rId2" Type="' + X + 'package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="' + X + 'officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>');
+    zip.file('docProps/core.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<cp:coreProperties xmlns:cp="' + X + 'package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>수변전일지</dc:title><dcterms:created xsi:type="dcterms:W3CDTF">' + new Date().toISOString().slice(0, 19) + 'Z</dcterms:created></cp:coreProperties>');
+    zip.file('docProps/app.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Properties xmlns="' + X + 'officeDocument/2006/extended-properties"><Application>Microsoft Excel</Application></Properties>');
+    zip.file('xl/workbook.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<workbook xmlns="' + X + 'spreadsheetml/2006/main" xmlns:r="' + X + 'officeDocument/2006/relationships"><workbookPr defaultThemeVersion="124226"/><bookViews><workbookView activeTab="0"/></bookViews><sheets>'
+      + names.map((nm, i) => '<sheet name="' + xesc(nm) + '" sheetId="' + (i + 1) + '" r:id="rId' + (i + 1) + '"/>').join('') + '</sheets><calcPr calcId="145621" fullCalcOnLoad="1"/></workbook>');
+    zip.file('xl/_rels/workbook.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="' + X + 'package/2006/relationships">' + yms.map((_, i) => '<Relationship Id="rId' + (i + 1) + '" Type="' + X + 'officeDocument/2006/relationships/worksheet" Target="worksheets/sheet' + (i + 1) + '.xml"/>').join('')
+      + '<Relationship Id="rId' + (N + 1) + '" Type="' + X + 'officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rId' + (N + 2) + '" Type="' + X + 'officeDocument/2006/relationships/theme" Target="theme/theme1.xml"/><Relationship Id="rId' + (N + 3) + '" Type="' + X + 'officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/></Relationships>');
+    zip.file('xl/styles.xml', st.xml); zip.file('xl/theme/theme1.xml', form.theme);
+    zip.file('xl/sharedStrings.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<sst xmlns="' + X + 'spreadsheetml/2006/main" count="' + sst.length + '" uniqueCount="' + sst.length + '">' + sst.map((t) => '<si><t xml:space="preserve">' + xesc(t) + '</t></si>').join('') + '</sst>');
+    return zip;
   }
   async function logExcel(year) {
     const b = $(year ? 'logXy' : 'logXm'); const old = b.textContent; b.disabled = true; b.textContent = '만드는 중…';
@@ -1316,25 +1395,8 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       const [form] = await Promise.all([logFormGet(), loadJs('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js')]);
       const y = +logDate.slice(0, 4), now = kstToday(), last = year ? (y < +now.slice(0, 4) ? 12 : +now.slice(5, 7)) : +logDate.slice(5, 7);
       const yms = []; for (let m = year ? 1 : last; m <= last; m++) yms.push(y + '-' + String(m).padStart(2, '0'));
-      const days = await logRange(logAdd(yms[0] + '-01', -1), yms[yms.length - 1] + '-31');   // 1일 전일지침용으로 하루 앞부터
-      const sst = [], sidx = new Map(), str = (t) => { if (!sidx.has(t)) { sidx.set(t, sst.length); sst.push(t); } return sidx.get(t); };
-      const zip = new JSZip(), N = yms.length, names = yms.map((ym) => form.names[+ym.slice(5) - 1] || (+ym.slice(5) + '월'));
-      yms.forEach((ym, i) => zip.file('xl/worksheets/sheet' + (i + 1) + '.xml', logSheetXml(form, ym, days, str, i === 0)));
-      const X = 'http://schemas.openxmlformats.org/', ct = 'application/vnd.openxmlformats-officedocument.';
-      zip.file('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="' + X + 'package/2006/content-types"><Default Extension="rels" ContentType="' + ct.replace('officedocument.', '') + 'package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>'
-        + '<Override PartName="/xl/workbook.xml" ContentType="' + ct + 'spreadsheetml.sheet.main+xml"/>' + yms.map((_, i) => '<Override PartName="/xl/worksheets/sheet' + (i + 1) + '.xml" ContentType="' + ct + 'spreadsheetml.worksheet+xml"/>').join('')
-        + '<Override PartName="/xl/theme/theme1.xml" ContentType="' + ct + 'theme+xml"/><Override PartName="/xl/styles.xml" ContentType="' + ct + 'spreadsheetml.styles+xml"/><Override PartName="/xl/sharedStrings.xml" ContentType="' + ct + 'spreadsheetml.sharedStrings+xml"/>'
-        + '<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="' + ct + 'extended-properties+xml"/></Types>');
-      zip.file('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="' + X + 'package/2006/relationships"><Relationship Id="rId1" Type="' + X + 'officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/><Relationship Id="rId2" Type="' + X + 'package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="' + X + 'officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>');
-      zip.file('docProps/core.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<cp:coreProperties xmlns:cp="' + X + 'package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>수변전일지</dc:title><dcterms:created xsi:type="dcterms:W3CDTF">' + new Date().toISOString().slice(0, 19) + 'Z</dcterms:created></cp:coreProperties>');
-      zip.file('docProps/app.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Properties xmlns="' + X + 'officeDocument/2006/extended-properties"><Application>Microsoft Excel</Application></Properties>');
-      zip.file('xl/workbook.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<workbook xmlns="' + X + 'spreadsheetml/2006/main" xmlns:r="' + X + 'officeDocument/2006/relationships"><workbookPr defaultThemeVersion="124226"/><bookViews><workbookView activeTab="0"/></bookViews><sheets>'
-        + names.map((nm, i) => '<sheet name="' + xesc(nm) + '" sheetId="' + (i + 1) + '" r:id="rId' + (i + 1) + '"/>').join('') + '</sheets><calcPr calcId="145621" fullCalcOnLoad="1"/></workbook>');
-      zip.file('xl/_rels/workbook.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="' + X + 'package/2006/relationships">' + yms.map((_, i) => '<Relationship Id="rId' + (i + 1) + '" Type="' + X + 'officeDocument/2006/relationships/worksheet" Target="worksheets/sheet' + (i + 1) + '.xml"/>').join('')
-        + '<Relationship Id="rId' + (N + 1) + '" Type="' + X + 'officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rId' + (N + 2) + '" Type="' + X + 'officeDocument/2006/relationships/theme" Target="theme/theme1.xml"/><Relationship Id="rId' + (N + 3) + '" Type="' + X + 'officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/></Relationships>');
-      zip.file('xl/styles.xml', form.styles); zip.file('xl/theme/theme1.xml', form.theme);
-      zip.file('xl/sharedStrings.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<sst xmlns="' + X + 'spreadsheetml/2006/main" count="' + sst.length + '" uniqueCount="' + sst.length + '">' + sst.map((t) => '<si><t xml:space="preserve">' + xesc(t) + '</t></si>').join('') + '</sst>');
-      const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', mimeType: ct + 'spreadsheetml.sheet' });
+      const days = await logRange(logAdd(yms[0] + '-01', -1), yms[yms.length - 1] + '-31');   // 1일 10시·전일지침용으로 하루 앞부터
+      const blob = await logZip(form, yms, days).generateAsync({ type: 'blob', compression: 'DEFLATE', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const url = URL.createObjectURL(blob), a = document.createElement('a');
       a.href = url; a.download = '부산메리츠타워_수변전일지_' + (year ? y + '년' : yms[0]) + '.xlsx'; document.body.append(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 60000);
@@ -1763,7 +1825,46 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
         $('msgs').style.maxHeight = kb > 60 ? Math.max(90, Math.round(vv.height - 190)) + 'px' : '';
       };
       vv.addEventListener('resize', fitDock); vv.addEventListener('scroll', fitDock);
+      vv.addEventListener('resize', () => setTimeout(fieldUp, 60));
     }
+    // 11/24 사용자 "모바일에선 메모에 채팅칠때 창이안보여" : 폰에서 할 일 메모 칸을 누르면 자판 바로 위로 올라온 대화창이 칸을 덮음
+    //  (브라우저는 칸이 보이는 높이 안에만 있으면 화면을 안 올려 줌 → 자판 위 약 60px 띠에 있던 칸이 대화창 뒤로 감) → 자판이 다 뜬 뒤 칸이 대화창 위에 오게 화면을 올림
+    function fieldUp() {
+      const a = document.activeElement;
+      if (!a || !a.matches || !a.matches('input[type=text],textarea') || a.readOnly || $('dock').contains(a)) return;
+      const v = window.visualViewport, top = (v ? v.offsetTop : 0) + 8, kbTop = document.body.classList.contains('kb-guess') ? innerHeight * (1 - KB_GUESS) : Infinity;
+      const bot = Math.min(v ? v.offsetTop + v.height : innerHeight, $('dock').getBoundingClientRect().top, kbTop) - 8;
+      const r = a.getBoundingClientRect();
+      if (r.bottom > bot) window.scrollBy(0, r.bottom - bot); else if (r.top < top) window.scrollBy(0, r.top - top);
+    }
+    document.addEventListener('focusin', () => { for (const t of [150, 400, 800]) setTimeout(fieldUp, t); });   // 자판 뜨는 동안 몇 번 (자판 높이가 늦게 정해지는 폰)
+    window.addEventListener('resize', fieldUp);
+    // 11/24 사용자 캡처 (폰 업무판 앱 09:37) : 대화창(메모)에 칠 때 자판이 입력 줄을 덮음 — 앱(캐패시터 7, 안드로이드 15 화면 끝까지 그리기)은 자판이 떠도 앱 화면을 안 줄이고
+    //  visualViewport 도 그대로라 페이지가 자판을 모름 (캐패시터 CapacitorWebView.edgeToEdgeHandler 가 상태·내비 막대만 여백으로 넣고 자판은 안 셈) → 위 fitDock·fieldUp 이 못 씀
+    //  → 폰에서 글 칸을 눌렀는데 0.5초 뒤에도 보이는 높이가 안 줄었으면 '자판이 아래를 덮음'으로 봄 (kb-guess) : 대화 입력이면 대화창을 화면 위로 붙여 입력 줄까지 위쪽 55% 안에, 다른 칸이면 칸을 그 안으로 올림
+    //  자판 높이가 보이는 폰(크롬 등)은 그대로 원래 방식 — 나중에 보이게 되면 바로 풂
+    const KB_GUESS = 0.45;   // 자판이 덮는다고 보는 아래쪽 몫 (캡처 : 앱 화면 아래 약 32% — 자판을 크게 쓰는 폰도 들게 여유)
+    const visH = () => (window.visualViewport ? visualViewport.height : innerHeight);
+    const editing = () => { const a = document.activeElement; return !!(a && a.matches && a.matches('input[type=text],textarea') && !a.readOnly); };
+    let fullH = visH();
+    function dockHome() { const d = $('dock'); d.style.top = ''; if (d.style.bottom === 'auto') d.style.bottom = ''; $('msgs').style.maxHeight = ''; }
+    function kbGuessOff() { if (!document.body.classList.contains('kb-guess')) return; document.body.classList.remove('kb-guess'); dockHome(); }
+    function kbGuessCheck() {
+      if (!editing() || !matchMedia('(pointer: coarse)').matches || innerWidth >= 760) return;   // 폰만
+      if (visH() < fullH - 100) { kbGuessOff(); return; }   // 자판 높이가 보임 → 원래 방식
+      document.body.classList.add('kb-guess');
+      const lim = Math.round(innerHeight * (1 - KB_GUESS)), d = $('dock'), m = $('msgs');
+      if (d.contains(document.activeElement)) {
+        d.style.bottom = 'auto'; d.style.top = '0px'; m.style.maxHeight = '';
+        const over = d.getBoundingClientRect().bottom - lim;
+        if (over > 0) m.style.maxHeight = Math.max(80, Math.round(m.getBoundingClientRect().height - over)) + 'px';
+        m.scrollTop = m.scrollHeight;
+      } else { dockHome(); fieldUp(); }
+    }
+    if (window.visualViewport) visualViewport.addEventListener('resize', () => { if (!editing()) fullH = visH(); else if (visH() < fullH - 100) kbGuessOff(); });
+    window.addEventListener('resize', () => { if (!editing()) fullH = visH(); });
+    document.addEventListener('focusin', () => { for (const t of [500, 1000]) setTimeout(kbGuessCheck, t); });
+    document.addEventListener('focusout', () => setTimeout(() => { if (!editing()) kbGuessOff(); }, 150));
     // 끌어다 놓기 (사용자 10/30 "파일 드래그로도 첨부되게") : 창 어디에 놓아도 메모에 첨부, 여러 개면 하나씩 차례로
     let dragN = 0;
     const hasFiles = (e) => Array.from((e.dataTransfer && e.dataTransfer.types) || []).includes('Files');
