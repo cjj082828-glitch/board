@@ -46,7 +46,7 @@ h1 .w{color:var(--muted);font-weight:500}
 .nav{display:flex;gap:6px}
 .btn{min-width:36px;height:36px;padding:0 14px;border:1px solid var(--line);border-radius:var(--r-ctl);background:var(--surface);font-size:14px;font-weight:600;cursor:pointer}
 .btn:hover:not(:disabled){border-color:color-mix(in srgb,var(--ink-2) 45%,var(--line))}
-.btn:disabled{opacity:.4;cursor:default}
+.btn:disabled,.btn.off{opacity:.4;cursor:default}
 .btn.solid{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .btn.solid:hover:not(:disabled){filter:brightness(1.06)}
 
@@ -104,6 +104,8 @@ body:not([data-tab="log"]) #logPage{display:none!important}
 .log-t tr.sum td{font-weight:700;background:#2A3A4E}
 .log-t td.it{position:sticky;left:0;background:var(--sunken)}.log-t tr.sum td.it{background:#2A3A4E}
 .log-note{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.5}
+.log-note.warn{color:var(--amber);font-weight:600}.log-t td.na{color:var(--amber);text-align:center;font-size:12px;white-space:nowrap}
+.log-t td.gapx{color:var(--amber);font-weight:700}
 .seg .tab{white-space:nowrap}
 @media (max-width:520px){.seg .tab{padding:0 9px;font-size:13px}}   /* 탭 4개(수변전일지 더함)가 폰 한 줄에 들어가게 */
 @media (max-width:520px){.tabs>.seg{gap:2px;padding:3px}.seg .tab{padding:0 6px;font-size:12.5px;gap:4px}.seg .tab-n{padding:1px 5px}}   /* 11/20 탭 5개(전력관리 더함) — 숫자 붙어도 폰 한 줄 */
@@ -156,10 +158,17 @@ body:not([data-tab="log"]) #logPage{display:none!important}
 .rep-chip[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .rep-chip-n{font-size:11px;font-weight:700;padding:0 6px;border-radius:999px;background:var(--sunken);color:var(--ink-2)}
 .rep-chip[aria-selected="true"] .rep-chip-n{background:color-mix(in srgb,var(--accent-ink) 16%,transparent);color:var(--accent-ink)}
+/* 11/26 정기보고서 두 단 칩 : 위 = 갈래(채운 칩), 아래 = 그 갈래 주기(작은 테두리 칩) — 위아래가 한 묶음으로 보이게 아래 줄은 붙이고 작게 */
+.rep-chips.sub{gap:5px;margin-top:-4px}
+.rep-chips.sub .rep-chip{height:26px;padding:0 8px 0 10px;font-size:12.5px;background:transparent}
+.rep-chips.sub .rep-chip[aria-selected="true"]{background:color-mix(in srgb,var(--accent) 14%,transparent);border-color:var(--accent);color:var(--accent)}
+.deck-orig .orig-img{width:44px;height:44px;object-fit:cover;border-radius:6px;flex:none;background:var(--sunken)}   /* 11/26 보고서 원본 파일 줄 (사진은 작은 그림) */
+.rep-chips.sub .rep-chip[aria-selected="true"] .rep-chip-n{background:color-mix(in srgb,var(--accent) 20%,transparent);color:var(--accent)}
 .deck{display:flex;flex-direction:column;gap:12px;max-width:1040px;width:100%;margin:0 auto}
 .deck-h{display:flex;align-items:center;gap:12px;min-width:0}
 .deck-t{font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .deck-n{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+@media (max-width:520px){.deck-h{flex-wrap:wrap;gap:6px}.deck-h::after{content:'';flex-basis:100%;order:1}.deck-h>.seg,.deck-h>.btn:not(#deckBack){order:2}.deck-h .btn{padding:0 8px;white-space:nowrap}}   /* 11/26 PDF 버튼 더해 폰에서 버튼 글자가 세로로 꺾임 → 폰은 두 줄 : 목록·제목·장수 / 보기 방식·PPT·PDF·삭제 */
 .btn.del{color:var(--red)}
 .btn.sm{height:30px;padding:0 12px;font-size:13px}
 #repSel{margin-left:auto}
@@ -430,7 +439,7 @@ body.kb-guess .wrap{padding-bottom:calc(50vh + 100px)}
   </header>
 
   <nav class="tabs" id="tabs" hidden>
-    <div class="seg" role="tablist" aria-label="페이지"><button class="tab" role="tab" id="tabDay" type="button" aria-selected="true">오늘 업무</button><button class="tab" role="tab" id="tabRep" type="button" aria-selected="false">보고서<span class="tab-n" id="repCount" hidden></span></button><button class="tab" role="tab" id="tabFile" type="button" aria-selected="false">자료실<span class="tab-n" id="fileCount" hidden></span></button><button class="tab" role="tab" id="tabPow" type="button" aria-selected="false">전력관리<span class="tab-n" id="powCount" hidden></span></button><button class="tab" role="tab" id="tabLog" type="button" aria-selected="false">수변전일지</button></div>
+    <div class="seg" role="tablist" aria-label="페이지"><button class="tab" role="tab" id="tabDay" type="button" aria-selected="true">오늘 업무</button><button class="tab" role="tab" id="tabFile" type="button" aria-selected="false">자료실<span class="tab-n" id="fileCount" hidden></span></button><button class="tab" role="tab" id="tabRep" type="button" aria-selected="false">보고서<span class="tab-n" id="repCount" hidden></span></button><button class="tab" role="tab" id="tabPow" type="button" aria-selected="false">정기보고서<span class="tab-n" id="powCount" hidden></span></button><button class="tab" role="tab" id="tabLog" type="button" aria-selected="false">수변전일지</button></div>
     <button class="btn sm" id="repSel" type="button" hidden>선택 삭제</button><button class="btn sm del" id="repSelDel" type="button" hidden disabled>골라 줘</button>
     <button class="out" id="logout" type="button">로그아웃</button>
   </nav>
@@ -449,10 +458,11 @@ body.kb-guess .wrap{padding-bottom:calc(50vh + 100px)}
   <section class="reports" id="repPage">
     <div class="rep-list" id="repList"></div>
     <div class="deck" id="deck" hidden>
-      <div class="deck-h"><button class="btn" id="deckBack" type="button">‹ 목록</button><div class="deck-t" id="deckTitle"></div><span class="deck-n" id="deckNum"></span><div class="seg mode" role="group" aria-label="보는 방식"><button class="tab" id="modeScroll" type="button" aria-pressed="true">쭉 보기</button><button class="tab" id="modeOne" type="button" aria-pressed="false">한 장씩</button></div><button class="btn" id="deckPdf" type="button" title="이 보고서를 PDF로 내려받기">PDF</button><button class="btn" id="deckPpt" type="button" title="PPT 원본 받기" hidden>PPT</button><button class="btn del" id="deckDel" type="button" title="이 보고서 지우기 (한 번 더 눌러야 지워짐)">삭제</button></div>
+      <div class="deck-h"><button class="btn" id="deckBack" type="button">‹ 목록</button><div class="deck-t" id="deckTitle"></div><span class="deck-n" id="deckNum"></span><div class="seg mode" role="group" aria-label="보는 방식"><button class="tab" id="modeScroll" type="button" aria-pressed="true">쭉 보기</button><button class="tab" id="modeOne" type="button" aria-pressed="false">한 장씩</button></div><button class="btn" id="deckPpt" type="button" title="PPT 원본 받기" hidden>PPT</button><button class="btn" id="deckPdf" type="button" title="이 보고서를 PDF로 내려받기">PDF</button><button class="btn del" id="deckDel" type="button" title="이 보고서 지우기 (한 번 더 눌러야 지워짐)">삭제</button></div>
       <div class="slides" id="slides"></div>
       <div class="slide" id="slide" hidden></div>
       <div class="deck-nav" id="deckNav" hidden><button class="btn" id="prevSlide" type="button" aria-label="이전 장">‹</button><div class="dots" id="dots"></div><button class="btn" id="nextSlide" type="button" aria-label="다음 장">›</button></div>
+      <div class="file-batch deck-orig" id="deckOrig" hidden></div>
     </div>
   </section>
 
@@ -903,7 +913,8 @@ body.kb-guess .wrap{padding-bottom:calc(50vh + 100px)}
       }
       box.append(d);
     }
-    const replied = chatMsgs.some((m) => m.from === 'claude' && Date.parse(m.at) > waitingSince - 2000);
+    // 11/26 중간 글(mid, PC 훅이 올리는 진행 글 — 사용자 "니가 답변한거처럼 앱에서와 같이")은 답 글처럼 보이되 답으로 안 침 → '확인 중'이 진짜 답이 올 때까지 남음
+    const replied = chatMsgs.some((m) => m.from === 'claude' && !m.mid && Date.parse(m.at) > waitingSince - 2000);
     const waiting = waitingSince && !replied && Date.now() - waitingSince < 300000;
     typingEl = waiting ? el('div', 'typing', typingText()) : null;
     if (typingEl) box.append(typingEl);
@@ -1084,7 +1095,7 @@ body.kb-guess .wrap{padding-bottom:calc(50vh + 100px)}
   // 시설팀 입력 페이지(새 저장소 index.html)가 ppld 'sl_<일지 열쇠 해시 16>_<날짜>'에 일지 열쇠로 암호화해 넣은 지침을 풂 — 일지 열쇠는 판 문서 sublog_key(판 키로 암호화)
   const LOG_TIMES = ['10', '14', '18', '24'];   // 입력 페이지 TIMES 와 같게
   const LOG_PAN = [['HV', '특고압 HV-4', 1000, 'MWh'], ['LV4', 'LV-4 전등·전열', 1000, 'MWh'], ['LV5', 'LV-5 냉·난방', 1000, 'MWh'], ['LV9', 'LV-9 일반동력', 1, 'kWh'], ['LV10', 'LV-10 비상동력', 1000, 'MWh']];
-  let logKey = null, logPfx = '', logDate = '', logCache = {}, logLy;   // logLy = 판 문서 sublog_ly (작년 엑셀 값) — undefined 아직 안 받음, null 판에 없음
+  let logKey = null, logPfx = '', logDate = '', logCache = {}, logLy, logKep;   // logLy = 판 문서 sublog_ly (작년 엑셀 값), logKep = 판 문서 kepco_day (한전 일별 kWh, log_kepco.py) — undefined 아직 안 받음, null 판에 없음
   const LOG_WEB = '2026-11-20';   // 일지 웹 시작 — 이 날부터의 작년 값은 일지 웹 문서에서 (log_web_read.py WEB_START 와 같게)
   const logAdd = (s, n) => isoDay(utc(s) + n * 864e5);
   const logNum = (s) => { s = String(s == null ? '' : s).replace(/[,\s]/g, ''); return s === '' ? null : (/^-?\d+(\.\d+)?$/.test(s) ? Number(s) : NaN); };
@@ -1187,24 +1198,49 @@ body.kb-guess .wrap{padding-bottom:calc(50vh + 100px)}
     return td;
   }
   async function logLyRow(k) {   // 작년 같은 요일(364일 전) 반별 하루 kWh {v, bad, none} — 일지 웹 시작 전은 판 문서 sublog_ly (엑셀 값, 위키 스크립트/전력 점검/log_ly.py), 그 뒤는 일지 웹 문서 (사용자 11/23 "지난해랑 비교해서 증감량 비교도 중요한데")
-    if (k >= LOG_WEB) { const [a, p] = await Promise.all([logDay(k), logDay(logAdd(k, -1))]); return { v: LOG_PAN.map((pn) => logUse(a, p, pn)), bad: [] }; }
+    if (k >= LOG_WEB) { const [a, p] = await Promise.all([logDay(k), logDay(logAdd(k, -1))]); return { v: LOG_PAN.map((pn) => logUse(a, p, pn)), bad: [], span: logSpan(k, a, p) }; }
     if (logLy === undefined) { const s = await ref('sublog_ly').get(); logLy = (s.exists && typeof s.data().v === 'string' && (await dec(s.data().v))) || null; }
     const r = logLy && logLy.d && logLy.d[k];
     return { v: LOG_PAN.map((pn, i) => (r && r[i] != null ? r[i] : null)), bad: ((logLy && logLy.bad) || []).filter((b) => k >= b[1] && k <= b[2]).map((b) => b[0]), none: !logLy };
   }
-  function logViews(d, a, p, w, wp, ly) {
+  // 하루치인지 (사용자 11/26 판 "23일 월 수변전일지에는 마이너스인데 왜 보고서엔 하루 12퍼 증가지?", "이런 오류 있으면 안되는데 보고서도 그럼 사실과 다르잖아") : 시설팀이 '24시' 칸을 24시에 안 넣는 날이 있음
+  // 판은 칸별 입력 시각을 못 읽음 (일지 웹 문서 = 값 r · 교체 x · 마지막 저장 u 뿐) → 그날 문서 u 를 그날 24시 칸 입력 시각으로 봄 — 우리 PC 백업 판 대조 11/20 ~ 11/25 : 24시 칸 입력과 u 차이 3분 안
+  // 전날·그날 24시 칸 입력이 24시(다음 날 0시)에서 1시간 넘게 벗어나면 하루치 아님 → 증감 % 안 냄 · 24시 칸 뒤에 앞 칸을 고치면 u 가 늦어져 하루치여도 '아님'이 될 수 있음 (틀린 %보다 안전한 쪽)
+  function logSpan(d, a, p) {   // {ok, from, to} — from = 전날 24시 칸 입력(전날 문서 u), to = 그날 24시 칸 입력(그날 문서 u), ms
+    const t = (o) => { const x = o && o.u ? Date.parse(o.u) : NaN; return Number.isNaN(x) ? null : x; };
+    const from = t(p), to = t(a), off = (x, day) => x != null && Math.abs(x - (utc(day) + 15 * 3600e3)) > 3600e3;   // utc(day) + 15시간 = 그날 24시 (한국)
+    return { ok: !(off(from, logAdd(d, -1)) || off(to, d)), from, to };
+  }
+  const logSpanTxt = (sp) => { const a = sp.from != null ? stamp(new Date(sp.from).toISOString()) : '?', b = sp.to != null ? stamp(new Date(sp.to).toISOString()) : '?'; return a + ' ~ ' + (a.split(' ')[0] === b.split(' ')[0] ? b.split(' ')[1] : b); };
+  async function logKepDay() {   // 한전 일별 {날짜: kWh} — 판 문서 kepco_day (위키 스크립트/전력 점검/log_kepco.py, 매일 전력 점검 자료에서), 없으면 {}
+    if (logKep === undefined) { try { const s = await ref('kepco_day').get(); logKep = (s.exists && typeof s.data().v === 'string' && (await dec(s.data().v))) || null; } catch (e) { logKep = null; } }
+    return (logKep && logKep.d) || {};
+  }
+  function logViews(d, a, p, w, wp, ly, kep) {
     const wk = logAdd(d, -7), lk = logAdd(d, -364), out = [];
     const day = LOG_PAN.map((pn) => logUse(a, p, pn)), last = LOG_PAN.map((pn) => logUse(w, wp, pn)), lyv = ly.v;
-    const lyChg = (x, y, ids) => (ids.some((id) => ly.bad.includes(id)) ? logTd('안 믿음') : logChg(x, y));   // 2025년 1 ~ 3월 LV-4 (계량 문제로 보임)
-    const t1 = logTable(['반', '하루 kWh', '지난주 (' + md(wk) + ' ' + dow(wk) + ')', '증감', '작년 (' + md(lk) + ' ' + dow(lk) + ')', '증감']);
-    LOG_PAN.forEach((pn, i) => { const tr = el('tr'); tr.append(el('td', 'it', pn[1]), logTd(day[i]), logTd(last[i]), logChg(day[i], last[i]), logTd(lyv[i]), lyChg(day[i], lyv[i], [pn[0]])); t1.append(tr); });
+    const sp = logSpan(d, a, p), spW = logSpan(wk, w, wp), spL = ly.span || { ok: true };   // 작년이 엑셀 값(일지 웹 전)이면 입력 시각을 몰라 그대로 씀
+    const num2 = (x, y) => typeof x === 'number' && typeof y === 'number';
+    const chg = (x, y, ok) => (ok || !num2(x, y) ? logChg(x, y) : logTd('하루치 아님', 'na'));
+    const lyChg = (x, y, ids) => (ids.some((id) => ly.bad.includes(id)) ? logTd('안 믿음') : chg(x, y, sp.ok && spL.ok));   // 2025년 1 ~ 3월 LV-4 (계량 문제로 보임)
+    const has = (v) => v.some((x) => typeof x === 'number');
+    const t1 = logTable(['반', sp.ok || !has(day) ? '하루 kWh' : 'kWh (하루치 아님)', '지난주 (' + md(wk) + ' ' + dow(wk) + ')', '증감', '작년 (' + md(lk) + ' ' + dow(lk) + ')', '증감']);
+    LOG_PAN.forEach((pn, i) => { const tr = el('tr'); tr.append(el('td', 'it', pn[1]), logTd(day[i]), logTd(last[i]), chg(day[i], last[i], sp.ok && spW.ok), logTd(lyv[i]), lyChg(day[i], lyv[i], [pn[0]])); t1.append(tr); });
     const lvA = logSumLv(day.slice(1)), lvB = logSumLv(last.slice(1)), lvC = logSumLv(lyv.slice(1));
-    const s1 = el('tr', 'sum'); s1.append(el('td', 'it', 'LV 합계'), logTd(lvA), logTd(lvB), logChg(lvA, lvB), logTd(lvC), lyChg(lvA, lvC, LOG_PAN.slice(1).map((pn) => pn[0]))); t1.append(s1);
-    const s2 = el('tr'); s2.append(el('td', 'it', '특고압 − LV 합계'));
-    if (typeof day[0] === 'number' && typeof lvA === 'number') { s2.append(logTd((day[0] - lvA >= 0 ? '+' : '−') + logFmt(Math.abs(day[0] - lvA))), el('td', 'v'), logTd(lvA ? ((day[0] - lvA) / lvA * 100 >= 0 ? '+' : '') + ((day[0] - lvA) / lvA * 100).toFixed(1) + '%' : '')); } else s2.append(el('td', 'v'), el('td', 'v'), el('td', 'v'));
-    s2.append(el('td', 'v'), el('td', 'v'));
-    t1.append(s2);
-    out.push(logCard('반별 하루 사용량 — 지난주·작년 같은 요일 대비', 'var(--c2)', t1, el('div', 'log-note', '굵은 글자 = ±2% 넘음 (빨강 ↑ 늘어남 · 파랑 ↓ 줄어듦). 작년 = 364일 전 같은 요일' +(ly.none ? ' — 작년 값이 아직 판에 없음' : '') + (ly.bad.length ? '. 2025년 1 ~ 3월 LV-4는 계량 문제로 보여 작년 비교 안 믿음' : '') + '. 특고압·LV-4·LV-5 지침은 화면이 100 kWh 단위라 하루 ±100 kWh 흔들림')));
+    const s1 = el('tr', 'sum'); s1.append(el('td', 'it', 'LV 합계'), logTd(lvA), logTd(lvB), chg(lvA, lvB, sp.ok && spW.ok), logTd(lvC), lyChg(lvA, lvC, LOG_PAN.slice(1).map((pn) => pn[0]))); t1.append(s1);
+    const kd = kep[d], kw = kep[wk], kl = kep[lk];   // 한전 = 계량기 하루치 (0 ~ 24시) → % 그대로 믿음
+    const warn = [];
+    if (!sp.ok && has(day)) warn.push(md(d) + ' 값은 하루치 아님 — 24시 칸 입력 ' + logSpanTxt(sp) + ' (24시 ±1시간 밖) → 증감 % 안 냄' + (typeof kd === 'number' ? ' · 하루 비교는 한전 줄' : ' · 한전 일별 값 판에 없음'));
+    if (!spW.ok && has(last)) warn.push('지난주 ' + md(wk) + ' 값도 하루치 아님 — 24시 칸 입력 ' + logSpanTxt(spW) + ' → 지난주 증감 % 안 냄');
+    if (!spL.ok && has(lyv)) warn.push('작년 ' + md(lk) + ' 값도 하루치 아님 — 24시 칸 입력 ' + logSpanTxt(spL) + ' → 작년 증감 % 안 냄');
+    // 같은 날 특고압 − 저압 4반 합 = 계량 점검 (사용자 11/26 판 "23일 도 특고압 합계가 작년과 비교한거야? 왜 -615야" — 예전엔 %가 지난주 증감 칸 밑에 있어 비교로 읽힘) → 값은 하루 kWh 칸에만, 뜻·%·범위는 표 아래 한 줄 (폰에서 첫 칸이 넓어지지 않게 줄 이름은 짧게)
+    // 범위 = ±300 kWh : 특고압·LV-4·LV-5 지침 눈금 100 kWh × 3 (일지 2025-04 ~ 2026-11-19 593일 중 81일 넘음, 그중 50일은 앞뒤 날과 서로 지워짐 = 두 지침을 다른 시각에 읽음) · 월 합으론 ±0.5% (월간 전력 점검 9-9)
+    const gap = typeof day[0] === 'number' && typeof lvA === 'number' ? day[0] - lvA : null, gapOut = gap != null && Math.abs(gap) > 300;
+    const gapTxt = gap == null ? '' : (gap >= 0 ? '+' : '−') + logFmt(Math.abs(gap));
+    const s2 = el('tr'); s2.append(el('td', 'it', '특고압 − 저압 합'), logTd(gapTxt + (gapOut ? ' ⚠' : ''), gapOut ? 'gapx' : ''), el('td', 'v'), el('td', 'v'), el('td', 'v'), el('td', 'v')); t1.append(s2);
+    if (typeof kd === 'number') { const tr = el('tr'); tr.append(el('td', 'it', '한전 하루 (특고압 대조)'), logTd(kd), logTd(kw), logChg(kd, kw), logTd(kl), logChg(kd, kl)); t1.append(tr); }
+    const gapNote = gap == null ? [] : [el('div', 'log-note' + (gapOut ? ' warn' : ''), (gapOut ? '⚠ ' : '') + '특고압 − 저압 합 = 같은 날 특고압 − 저압 4반 합 (계량 점검, 지난주·작년 비교 아님) : ' + gapTxt + ' kWh (특고압의 ' + (day[0] ? (gap >= 0 ? '+' : '−') + Math.abs(gap / day[0] * 100).toFixed(1) : '-') + '%) — ' + (gapOut ? '눈금 오차 ±300 kWh 밖 → 특고압과 저압 지침을 다른 시각에 읽었을 수 있음' + (sp.ok ? '' : ' (위 입력 시각 줄)') : '눈금 오차 ±300 kWh 안'))];
+    out.push(logCard('반별 하루 사용량 — 지난주·작년 같은 요일 대비', 'var(--c2)', t1, ...warn.map((s) => el('div', 'log-note warn', '⚠ ' + s)), ...gapNote, el('div', 'log-note','굵은 글자 = ±2% 넘음 (빨강 ↑ 늘어남 · 파랑 ↓ 줄어듦). 작년 = 364일 전 같은 요일' +(ly.none ? ' — 작년 값이 아직 판에 없음' : '') + (ly.bad.length ? '. 2025년 1 ~ 3월 LV-4는 계량 문제로 보여 작년 비교 안 믿음' : '') + '. 특고압·LV-4·LV-5 지침은 화면이 100 kWh 단위라 하루 ±100 kWh 흔들림')));
     if (LOG_TIMES.length > 1) {
       const t2 = logTable(['반', ...logLabels(), '하루']); const segs = LOG_PAN.map((pn) => logSegs(a, p, pn));
       LOG_PAN.forEach((pn, i) => { const tr = el('tr'); tr.append(el('td', 'it', pn[1])); segs[i].forEach((v) => tr.append(logTd(v))); tr.append(logTd(day[i])); t2.append(tr); });
@@ -1236,10 +1272,10 @@ body.kb-guess .wrap{padding-bottom:calc(50vh + 100px)}
     try {
       if (!(await logInit())) { box.replaceChildren(el('div', 'log-note', '일지 열쇠가 아직 판에 없음 (log_web_read.py put-key)')); return; }
       const wk = logAdd(d, -7);
-      const [a, p, w, wp, ly] = await Promise.all([logDay(d), logDay(logAdd(d, -1)), logDay(wk), logDay(logAdd(wk, -1)), logLyRow(logAdd(d, -364))]);
+      const [a, p, w, wp, ly, kep] = await Promise.all([logDay(d), logDay(logAdd(d, -1)), logDay(wk), logDay(logAdd(wk, -1)), logLyRow(logAdd(d, -364)), logKepDay()]);
       if (d !== logDate) return;
       $('logRo').textContent = '읽기만' + (a && a.u ? ' · 마지막 입력 ' + stamp(a.u) : ' · 입력 없음');
-      box.replaceChildren(...logViews(d, a, p, w, wp, ly));
+      box.replaceChildren(...logViews(d, a, p, w, wp, ly, kep));
     } catch (e) { box.replaceChildren(el('div', 'log-note', '못 불러옴 : ' + (e && e.message ? e.message : e))); }
   }
   // 엑셀 받기 = 수변전일지 모양 표에 우리 값만 (사용자 11/24 판 "이렇게 완전 그양식을 써라는건 아니고 우리 정보를 저런 표로 너가 만들어서 달라는거야 저건 그대로 쓰면 빈칸도 많고 값을 못넣잖아" — 11/20 원래 양식 그대로 판은 볼트 기록 절)
@@ -1471,8 +1507,13 @@ body.kb-guess .wrap{padding-bottom:calc(50vh + 100px)}
     });
     r.after(box); fileOpen.add(f.id); r.setAttribute('aria-expanded', 'true');
   }
-  let repSub = ''; try { repSub = localStorage.getItem('mb_repsub') || ''; } catch (e) {}   // 전력관리 탭에서 고른 주기 (처음이면 보고서 있는 첫 주기)
-  const SUBS = ['일간', '주간', '월간', '계절별'], grp = (r) => { const g = r.reg ? String(r.reg) : ''; return g === '일일' ? '일간' : g; };   // 데이터 reg '일일'은 '일간'으로 보임 (매일 전력 점검이 --reg 일일로 올림 — 데이터·루틴은 안 바꿈)
+  // 11/26 정기보고서 탭 (사용자 "전력관리탭을 정기보고서로 하고 거기서 갈래를 나누자") : 두 단 칩 — 위 = 갈래(전력 · 참고 자료 · 뒤에 생기는 것), 아래 = 그 갈래의 주기
+  // 데이터 : rep_index 항목 grp = 갈래(board.py --grp), reg = 주기(--reg) · grp 없이 reg만 있는 예전 것 = 전력 갈래 (데이터·루틴은 안 바꿈) · 둘 다 없으면 보고서 탭
+  const mem = (k, v) => { try { if (v === undefined) return localStorage.getItem(k) || ''; localStorage.setItem(k, v); } catch (e) {} return ''; };   // 고른 갈래·주기 기억 (전력 주기는 예전 열쇠 mb_repsub 그대로)
+  const GRPS = ['전력', '참고 자료'], PERS = { '전력': ['일간', '주간', '월간', '계절별'] };   // 이 갈래·전력 주기는 0개여도 늘 보임, 다른 갈래 주기는 있는 것만
+  const per = (r) => { const g = r.reg ? String(r.reg) : ''; return g === '일일' ? '일간' : g; };   // 데이터 reg '일일'은 '일간'으로 보임 (매일 전력 점검이 --reg 일일로 올림)
+  const grp = (r) => { const g = r.grp ? String(r.grp) : ''; return g ? (g === '참고' ? '참고 자료' : g) : (r.reg ? '전력' : ''); };
+  const perKey = (g) => 'mb_repsub' + (g === '전력' ? '' : ':' + g);
   function repCounts() { const p = repIndex.filter((r) => grp(r)).length, g = repIndex.length - p; $('repCount').hidden = !g; $('repCount').textContent = g; $('powCount').hidden = !p; $('powCount').textContent = p; }
   function renderReports() {
     if (repOpen) { renderDeck(); return; }
@@ -1492,26 +1533,35 @@ body.kb-guess .wrap{padding-bottom:calc(50vh + 100px)}
     };
     // 칩 (사용자 11/17 "주간점검 월간점검 계절별 이렇게 나누는게", "정기보고서를 내리는게맞는거같은데", "저렇게 가로로 하는방법이 최선인가") : 고른 칩 카드만 보임
     // 11/20 전력관리 탭 따로 (사용자 "자료실 옆에 전력관리 넣고 그 옆에 수변전일지로 하자", 하위 "일간 주간 월간 계절별") : 보고서 탭 = reg 없는 것만(칩 없음), 전력관리 탭 = reg 있는 것 전부 → 일간 · 주간 · 월간 · 계절별(늘 보임, 0개도) · 다른 reg 값은 그 뒤에
-    let cur = '';
-    if (document.body.dataset.tab === 'pow') {
-      const subs = SUBS.concat([...new Set(repIndex.map(grp).filter((g) => g && !SUBS.includes(g)))]);
-      if (repSub === '일일') repSub = '일간';
-      cur = subs.includes(repSub) ? repSub : (subs.find((g) => repIndex.some((r) => grp(r) === g)) || SUBS[0]);
-      const row = el('div', 'rep-chips'); row.setAttribute('role', 'tablist'); row.setAttribute('aria-label', '전력 관리 주기'); box.append(row);
-      subs.forEach((g) => {
-        const c = el('button', 'rep-chip', g); c.type = 'button'; c.setAttribute('role', 'tab'); c.setAttribute('aria-selected', String(g === cur)); c.dataset.chip = g;
-        c.append(el('span', 'rep-chip-n', String(repIndex.filter((r) => grp(r) === g).length)));
+    // 11/26 정기보고서 : 위 줄 갈래 → 아래 줄 주기 (주기가 둘 이상인 갈래만 아래 줄, 하나뿐이면 그 갈래 전부)
+    let cur = '', curP = null;
+    const chipRow = (label, list, on, count, pick, cls) => {
+      const row = el('div', 'rep-chips' + (cls ? ' ' + cls : '')); row.setAttribute('role', 'tablist'); row.setAttribute('aria-label', label); box.append(row);
+      list.forEach((g) => {
+        const c = el('button', 'rep-chip', g || '기타'); c.type = 'button'; c.setAttribute('role', 'tab'); c.setAttribute('aria-selected', String(g === on)); c.dataset.chip = g;
+        c.append(el('span', 'rep-chip-n', String(count(g))));
         c.addEventListener('click', () => {
-          if (g === cur) return;
-          repSub = g; try { localStorage.setItem('mb_repsub', g); } catch (e) {}
-          sel.clear(); renderReports();   // 선택 삭제는 보이는 칩 안에서만
-          const f = $('repList').querySelector('.rep-chip[aria-selected="true"]'); if (f) f.focus();
+          if (g === on) return;
+          pick(g); sel.clear(); renderReports();   // 선택 삭제는 보이는 칩 안에서만
+          const f = box.querySelector('.rep-chips' + (cls ? '.' + cls : ':not(.sub)') + ' .rep-chip[aria-selected="true"]'); if (f) f.focus();
         });
         row.append(c);
       });
+    };
+    if (document.body.dataset.tab === 'pow') {
+      const grps = GRPS.concat([...new Set(repIndex.map(grp).filter((g) => g && !GRPS.includes(g)))]), saved = mem('mb_repgrp');
+      cur = grps.includes(saved) ? saved : (grps.find((g) => repIndex.some((r) => grp(r) === g)) || GRPS[0]);
+      chipRow('정기보고서 갈래', grps, cur, (g) => repIndex.filter((r) => grp(r) === g).length, (g) => mem('mb_repgrp', g), '');
+      const inG = repIndex.filter((r) => grp(r) === cur), base = PERS[cur] || [];
+      const pers = base.concat([...new Set(inG.map(per))].filter((p) => !base.includes(p)));
+      if (pers.length > 1) {
+        let p0 = mem(perKey(cur)); if (p0 === '일일') p0 = '일간';
+        curP = pers.includes(p0) ? p0 : (pers.find((p) => inG.some((r) => per(r) === p)) || pers[0]);
+        chipRow(cur + ' 주기', pers, curP, (p) => inG.filter((r) => per(r) === p).length, (p) => mem(perKey(cur), p), 'sub');
+      }
     }
     let shown = 0;
-    repIndex.forEach((r, i) => { if (grp(r) === cur) { card(r, i); shown++; } });
+    repIndex.forEach((r, i) => { if (grp(r) === cur && (curP === null || per(r) === curP)) { card(r, i); shown++; } });
     if (!shown) box.append(el('p', 'rep-empty', cur ? '아직 없어' : '아직 올린 보고서가 없어. 정리해 달라고 하면 여기에 올려둘게.'));
     selBar();
   }
@@ -1535,7 +1585,7 @@ body.kb-guess .wrap{padding-bottom:calc(50vh + 100px)}
     try {
       await put('rep_index', { list: repIndex.filter((r) => !set.has(String(r.id))) });
       for (const id of set) {
-        try { const s = await ref('rep_' + id).get(), d = s.exists ? s.data() : null, v = d && typeof d.v === 'string' ? await dec(d.v) : null; for (const f of [...arr(v && v.files), ...arr(v && v.slides).map((s) => s && s.img).filter(Boolean)]) for (let i = 0; i < (f.n || 1); i++) await ref('fil_' + f.id + '_' + i).delete(); } catch (e) {}   // 붙인 PPT·쪽 그림 조각도
+        try { const s = await ref('rep_' + id).get(), d = s.exists ? s.data() : null, v = d && typeof d.v === 'string' ? await dec(d.v) : null; for (const f of [...arr(v && v.files), ...arr(v && v.orig), ...arr(v && v.slides).map((s) => s && s.img).filter(Boolean)]) for (let i = 0; i < (f.n || 1); i++) await ref('fil_' + f.id + '_' + i).delete(); } catch (e) {}   // 붙인 PPT·쪽 그림 조각도
         try { await ref('rep_' + id).delete(); } catch (e) {}
       }   // 목록에서 빠지면 안 보임 — 문서 삭제가 막혀도 목록 기준
       repIndex = repIndex.filter((r) => !set.has(String(r.id))); sel.clear(); selMode = false;
@@ -1564,7 +1614,7 @@ body.kb-guess .wrap{padding-bottom:calc(50vh + 100px)}
     const a = [src, ...src.querySelectorAll('*')], b = [cl, ...cl.querySelectorAll('*')];
     a.forEach((n, i) => { const cs = getComputedStyle(n), t = b[i]; if (!t) return; for (let j = 0; j < cs.length; j++) { const k = cs[j], v = cs.getPropertyValue(k); if (v.includes('color(')) t.style.setProperty(k, srgb(v)); } });
   }
-  // PPT 받기 (사용자 11/12 "보고서에도 원본 그대로 보이게 하자, 다운받으면 PDF 말고 PPT") : put-ppt·put-report 때 붙인 PPT(files)가 있으면 PPT 버튼만, 없으면 예전처럼 화면 PDF
+  // PPT 받기 (사용자 11/12 "보고서에도 원본 그대로 보이게 하자, 다운받으면 PDF 말고 PPT") : put-ppt·put-report 때 붙인 PPT(files)가 있으면 PPT 버튼, 없으면 예전처럼 화면 PDF (11/26부터 PDF 버튼도 늘 옆에 — renderDeck)
   const repFile = (ext) => arr(repDoc && repDoc.files).find((f) => String(f.name || '').toLowerCase().endsWith(ext));
   async function saveAttach(f, b) {
     if (b.disabled) return;
@@ -1600,7 +1650,21 @@ body.kb-guess .wrap{padding-bottom:calc(50vh + 100px)}
     const sl = arr(repDoc && repDoc.slides);
     slideAt = Math.max(0, Math.min(slideAt, sl.length - 1));
     $('deckTitle').textContent = (repDoc && repDoc.title) || '불러오는 중…';
-    $('deckPpt').hidden = !repFile('.pptx'); $('deckPdf').hidden = !!repFile('.pptx');
+    // PDF 버튼은 PPT 옆에 늘 (사용자 11/26 판 "보고서에서 pdf도 ppt 옆에 버튼하나 만들어줘") : 붙인 PDF(files)가 있으면 그 파일, PPT만 있으면 흐리게, 붙인 파일이 없으면 예전처럼 화면 PDF
+    const ppt = repFile('.pptx'), pdf = repFile('.pdf'), off = !!ppt && !pdf;
+    $('deckPpt').hidden = !ppt; $('deckPdf').classList.toggle('off', off); $('deckPdf').setAttribute('aria-disabled', String(off));
+    $('deckPdf').title = pdf ? 'PDF 받기' : off ? '이 보고서는 PDF가 없어' : '이 보고서를 PDF로 내려받기';
+    // 11/26 원본 파일 (참고 자료 정리 — "원본 파일은 보고서에 붙여") : put-report --orig 로 붙인 것은 PPT·PDF 버튼이 안 집고 장 아래 받기 줄로 · 사진은 작은 그림
+    const og = arr(repDoc && repDoc.orig), ob = $('deckOrig'); ob.hidden = !og.length;
+    if (og.length) {
+      const h = el('div', 'fb-h'); h.append(el('span', 'fb-t', '원본 파일'), el('span', 'fb-m', og.length + '개'));
+      ob.replaceChildren(h, ...og.map((f) => {
+        const r = el('div', 'file-row'); r.title = f.name || '';
+        if (/\.(jpe?g|png)$/i.test(f.name || '')) { const im = el('img', 'orig-img'); im.alt = ''; pageUrl(f).then((u) => { if (u) im.src = u; }); r.append(im); }
+        const b = el('button', 'btn fr-b'); b.type = 'button'; b.append(el('span', 'af-s', '받기')); b.addEventListener('click', () => getFile(f, b));
+        r.append(el('span', 'fr-n', f.name || '파일'), el('span', 'fr-m', kb(f.size || 0)), b); return r;
+      }));
+    }
     const one = deckMode === 'one';
     $('modeScroll').setAttribute('aria-pressed', String(!one)); $('modeOne').setAttribute('aria-pressed', String(one));
     $('slides').hidden = one; $('slide').hidden = !one; $('deckNav').hidden = !one;
@@ -1784,7 +1848,7 @@ body.kb-guess .wrap{padding-bottom:calc(50vh + 100px)}
     $('deckBack').addEventListener('click', closeReport);
     $('modeScroll').addEventListener('click', () => setMode('scroll'));
     $('modeOne').addEventListener('click', () => setMode('one'));
-    $('deckPdf').addEventListener('click', savePdf);
+    $('deckPdf').addEventListener('click', () => { const f = repFile('.pdf'); if (f) return saveAttach(f, $('deckPdf')); if (repFile('.pptx')) return toast('이 보고서는 PDF가 없어'); savePdf(); });
     $('deckPpt').addEventListener('click', () => { const f = repFile('.pptx'); if (f) saveAttach(f, $('deckPpt')); });
     $('deckDel').addEventListener('click', delReport);
     $('repSel').addEventListener('click', () => { selMode = !selMode; sel.clear(); renderReports(); });
