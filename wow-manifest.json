@@ -1,0 +1,17 @@
+{
+  "name": "와우 판",
+  "short_name": "와우 판",
+  "description": "와우 포에버 매일 정보 판",
+  "lang": "ko",
+  "start_url": "./wow.html",
+  "scope": "./wow.html",
+  "display": "standalone",
+  "background_color": "#24282E",
+  "theme_color": "#24282E",
+  "icons": [
+    { "src": "wow-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "wow-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "wow-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "wow-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
